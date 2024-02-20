@@ -83,47 +83,39 @@
             \DeclareMathOperator*{\argmax}{argmax}
             \begin{align*}
                 h^*(z_1) &= \argmax_p
-                \mathbb{E}_{x' \sim \mathcal{D}, t_1, t_2 \sim \mathcal{T}} \left[
+                \mathbb{E}_{x' \sim \mathcal{D}, t_2 \sim \mathcal{T}} \left[
                     \left\langle
                         \frac{p}{\| p \|},
                         \frac{f(t_2(x'))}{\| f(t_2(x')) \|}
                     \right\rangle
-                    \Bigm| z_1 = f(t_1(x'))
+                    \Bigm| z_1
                 \right] \\
                 &= \argmax_p
                 \left\langle
                     \frac{p}{\| p \|},
-                    \mathbb{E}_{x' \sim \mathcal{D}, t_1, t_2 \sim \mathcal{T}} \left[
+                    \mathbb{E} \left[
                         \frac{f(t_2(x'))}{\| f(t_2(x')) \|}
-                        \Bigm| z_1 = f(t_1(x'))
+                        \Bigm| z_1
                     \right]
                 \right\rangle \\
-                &= \mathbb{E}_{x' \sim \mathcal{D}, t_1, t_2 \sim \mathcal{T}} \left[
+                &= \mathbb{E} \left[
                     \frac{f(t_2(x'))}{\| f(t_2(x')) \|}
-                    \Bigm| z_1 = f(t_1(x'))
+                    \Bigm| z_1
                 \right] \\
-                &= \mathbb{E}_{x' \sim \mathcal{D}, t_1 \sim \mathcal{T}} \left[
+                &= \mathbb{E} \left[
                     \overline{f}(x')
-                    \Bigm| z_1 = f(t_1(x'))
+                    \Bigm| z_1
                 \right] \\
                 &= \sum_{x' \in \mathcal{D}}
-                    \text{Pr}\{X = x' \mid f(\mathcal{T}(x')) = z_1\}
+                    p(x' \mid z_1)
                     \overline{f}(x')
             \end{align*}
         \]
-        with the final equality following from the definition of conditional
-        expectation, where \(\mathcal{T}(x')\) denotes a random variable drawn
-        by sampling a random augmentation and applying it to \(x'\).
-        <!-- where, with slight abuse of notation, \(\mathcal{T}\) is treated like a -->
-        <!-- random variable. -->
         As a sanity check, we see that one way to attain the minimal loss of zero
-        <!-- The minimal loss of zero is attained when \(h^* = \overline{f}\), which means -->
-        <!-- either \(P\{X = x \mid f(\mathcal{T}(x)) = z_1\} = 1\) or -->
         is via representational collapse: assuming that the expected
         representation \(\overline{f}(x)\) was constant for all \(x\), then \(h^*(z)\)
         could be equal to that same constant for all inputs \(z\) to obtain the
         optimal cosine similarity between the predictions and representations.
-        <!-- The latter corresponds to a representational collapse. -->
     </p>
 
     <p>
@@ -149,14 +141,8 @@
     <p>
         Let's take a closer look at the final equality:
         \[
-            \begin{align*}
-                h^*(z) &= \sum_{x' \in \mathcal{D}} \text{Pr}\{X = x' \mid f(\mathcal{T}(x')) = z\} \overline{f}(x'). \\
-                       &= \sum_{x' \in \mathcal{D}} p(x' \mid z) \overline{f}(x').
-            \end{align*}
+            h^*(z) = \sum_{x' \in \mathcal{D}} p(x' \mid z) \overline{f}(x').
         \]
-        where we denote \(p(x' \mid z) = \text{Pr}\{X = x' \mid
-        f(\mathcal{T}(x')) = z\}\) for brevity.
-
         A gradient descent step will optimize the encoder network
         while treating the predictor network
         <!-- itself, and thus whatever the predictor implicitly estimates the

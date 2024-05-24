@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-05-23] Next-token prediction = constrative learning</h1>
+
+    <p>So you know SimSiam, right?</p>
+    <ol>
+        <li>Dataset: distribution of text sequences</li>
+        <li>View 1 augmentation distribution: always returns the first first N-1 tokens</li>
+        <li>View 2 augmentation distribution: always returns the last token</li>
+        <li>Encoder network: the token embedding matrix, supposing tied inputs/outputs</li>
+        <li>Projector network: N/A</li>
+        <li>Predictor network: the entire transformer, excluding the embeddings</li>
+        <li>Loss function: defined over a batch, i.e. a contrastive variation. Same softmax formulation as CLIP</li>
+        <li>A batch?: every possible token for view 2; loss estimated with only one sample for view 1</li>
+        <li>Stop grads: gone, but it's fine, because contrastive</li>
+    </ol>
+    <p>👍</p>
+</div>
+</body>
+</html>
+

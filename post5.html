@@ -1,0 +1,117 @@
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-06-11] reading [:3]</h1>
+    <p>
+        i wonder how many people actually read the first 3 sections of a
+        deep learning research paper
+    </p>
+    <p>
+        by 'first 3' i mean introduction, background / related work, and
+        motivation (/ derivation, although this post is more directed towards
+        empirical research)
+    </p>
+    <p>
+        yeah yeah they aren't always actually located in the first 3 sections
+        but anyway
+    </p>
+    <p>
+        i generally skip straight to the ~4th section where the actual
+        practical algorithm is described
+    </p>
+    <p>
+        i would guesstimate that, conditioned on making it past the abstract,
+        the optimal policy spends at most 20 seconds reading during the first
+        skim of a paper, and doesn't read anything more than that 90% of the
+        time
+    </p>
+    <p>
+        i probably drop around the same proportion of papers after reading just
+        the abstract, so given that i've clicked on a link to a paper, the
+        probability that i'll read it in detail is maybe around 1%?
+    </p>
+    <p>
+        which i'm guessing is pretty standard
+    </p>
+    <p>
+        anyway i'm getting sidetracked. the point of this post is, i would
+        recommend trying to derive the motivation of the algorithm from the
+        algorithm itself, before reading the author's motivation
+    </p>
+    <p>
+        e.g. today i reread the <a href=https://arxiv.org/abs/2106.12142>iq
+        learn paper</a> great paper btw
+    </p>
+    <p>
+        boiled down to the minimal pseudocode, iq-learn with uhhh the chi
+        square div in discrete action space is basically
+    </p>
+    <pre>loss = V(s) - Q(s, a) + 0.5 * td_error </pre>
+    <pre>     = logsumexp Q(s, .) - Q(s, a) + 0.5 * td_error</pre>
+    <pre>td_error = (Q(s, a) - V(s')).pow(2)</pre>
+    <p>
+        which of course as the authors note, this is just a variant of the cql
+        loss with 0 reward
+    </p>
+    <p>
+        but hey, if you treat Q like some kind of log visitation energy
+        <code>Q(s, a) = log q(s, a) = log p(s, a) + log Z</code>
+    </p>
+    <p>
+        then its basically
+    </p>
+    <pre>loss = log p(s, a) + log Z - log p(s, a) - log Z + 0.5 (log p(s, a) + log Z - γlog p(s') - γlog Z).pow(2)</pre>
+    <pre>     = log p(s) - log p(s, a) + 0.5 (log p(s, a) - γlog p(s') + (1 - γ) log Z).pow(2)</pre>
+    <pre>    ~= log p(a | s) + 0.5 (log p(s, a) - γlog p(s')).pow(2)</pre>
+    <p>for γ close to one...</p>
+    <p>
+        idk, maybe it can be interpreted as behavioral cloning except the
+        model also parameterizes an implicit estimate of the expert's
+        visitation p(s, a), and adds a penalty term to the loss that
+        regularizes this estimate p(s, a) towards γp(s')?
+    </p>
+    <p>
+        (and i guess the (1 - γ) log Z term sort-of encourages Z to be close to one...?)
+    </p>
+    <p>
+        and that would make sense, right? like in terms of loss functions that
+        constrain an estimated visitation towards being an actual valid
+        visitation, given only a single transition sample, this is sort of the
+        best you can do
+    </p>
+    <p>
+        maybe this is a subset of what the authors of iql describe in their
+        section 3 or what the cql paper describes, maybe it's novel, maybe i
+        messed up the math, who knows
+    </p>
+    <p>
+        but either way it's a good exercise to try and explain why an algorithm
+        works before reading the author's explanation for how they derived the
+        algorithm
+    </p>
+    <p>
+        it forces you to understand at a high level what the algorithm is doing
+    </p>
+    <p>
+        and maybe occasionally this kind of thought exercise might lead to
+        interesting ideas, yknow what i mean?
+    </p>
+    <p>
+        errr of course i am obligated to tell you to always go back and read
+        the entire, mathematically rigorous derivation in detail afterward,
+        ahaha...
+    </p>
+</div>
+</body>
+</html>
+

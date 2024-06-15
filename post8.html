@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-06-15] SSL cond indep is easy and fun</h1>
+    <p>
+        so we've all heard of <a href=https://arxiv.org/abs/2008.01064>Lee et al. 2020</a>
+        by now where yadda yadda if you train a model to predict one part of
+        the input x1 from another part of the input x2 <br>
+
+        ... (the authors give an example of, x1 might be the foreground of an image
+        while x2 is the background) ... <br>
+
+        then this model is automatically good at predicting any variable y as
+        long as x1 and x2 are conditionally independent given y, which means
+        self-supervised learning is great
+    </p>
+    <p>
+        and this sounds great at first, except <a href=https://arxiv.org/abs/2106.04156>some</a>
+        like to point out that this conditional independence assumption doesn't
+        seem reasonable given that practically speaking, x1 and x2 are usually
+        heavily correlated inputs like two augmentations of the same input
+        image
+    </p>
+    <p>
+        Lee at al. 2020 tries to get around this with some analysis of e.g. what if
+        x and x' are <em>approximately</em> cond indep given y and whatnot
+    </p>
+    <p>
+        but tbh that's totally unnecessary---everything is fine because, uh,
+        if x1, x2 are augmentations of some image x, we can just take y=x.
+    </p>
+    <p>
+        at first glance that might seem a bit sus, like, how does that even lead
+        to a useful representation
+    </p>
+    <p>
+        but think about contrastive learning algs, like <a href=https://arxiv.org/abs/2002.05709>SimCLR</a>.
+    </p>
+    <p>
+        what simclr and most other contrastive algs do is basically just, make
+        the representation of different images have low cosine alignment
+    </p>
+    <p>
+        it's basically the same as trying to assign each image in the training
+        dataset its own direction in representation space
+    </p>
+    <p>
+        of course, if the dataset size is much larger than the representation
+        dimensionality, then the best you can do is some kind of superposition
+    </p>
+    <p>
+        but as long as you've achieved some sort of approximate orthogonalish
+        superposition of the training dataset in representation space, then you
+        can shard out arbitrary binary labelings of the training dataset with a
+        hyperplane
+    </p>
+    <p>
+        i.e. you can learn any classifier with a linear probe
+    </p>
+    <p>
+        simclr attempting to map each point of the dataset to its own
+        approximate direction / dimension in representation space, from a
+        certain perspective, is the same as trying to make it easy to determine
+        the identity of the original image in the training dataset, given an
+        augmentation of that image. if anything the simclr objective is basically
+        just a direct translation of, "make the nearest neighbor classifier for
+        'identity of original image' as accurate as possible"
+    </p>
+    <p>
+        of course this doesn't at all explain why simclr representations
+        generalize outside of the training dataset---that likely comes down to
+        smoothness / continuity constraints on the encoder, arising from its
+        parameterization as a neural network and how the loss function
+        encourages invariance on positive pairs
+    </p>
+    <p>
+        i guess this is all to say, the downstream task variable, y, discussed
+        in Lee et al. doesn't need to be thought of as some kind of high-level
+        info like class label, nor does the conditional independence assumption
+        need to be thought of as approximate. this conclusion is empirically
+        supported from the fact that practical self-supervised learning algs
+        seem to work fine while essentially just learning to be able to predict
+        the "identity of original image" variable
+    </p>
+    <p>
+        as a sidenote, i suppose simclr can intuitively be thought of as the
+        same thing as learning a representation with a VAE, except the noise in
+        latent space is a nonparametric standard normal rather than a gaussian
+        with parameterized diagonal. the main difference being, simclr no longer parameterizes
+        a high dimensional decoder, but instead decodes as a weighted mean according to
+        the nearest images in the training dataset. to make the decoder as accurate
+        as possible, simclr simply tries to make the representations of
+        different images consistently far apart from each other, where "far"
+        means euclidean / cosine distance in this context
+    </p>
+    <p>
+        and BYOL is that but the neural network predictor parameterizes some
+        nonlinear distance function as a drop-in replacement for
+        euclidean.
+    </p>
+</div>
+</body>
+</html>
+

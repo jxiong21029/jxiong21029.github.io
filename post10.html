@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-07-29] discrete diffusion was always going to suck</h1>
+    Relevant:
+    <ol>
+        <li> <a href=https://arxiv.org/abs/2107.03006>arxiv.org/abs/2107.03006</a>, Structured Denoising Diffusion Models in Discrete State-Spaces
+        <li> <a href=https://arxiv.org/abs/2310.16834>arxiv.org/abs/2310.16834</a>, Discrete Diffusion Modeling by Estimating the Ratios of the Data Distribution
+        <li> <a href=https://arxiv.org/abs/2406.07524>arxiv.org/abs/2406.07524</a>, Simple and Effective Masked Diffusion Models
+    </ol>
+    <p>
+        Before we ask, "why use diffusion in discrete spaces?", we have to
+        settle, "why use diffusion in continuous spaces?"
+    </p>
+    <p>
+        Ultimately, a generative model is a function which maps noise to data.
+        When modeling real world continuous data, like images, this function
+        will almost always be fairly non-smooth and... somewhat questionable to
+        regress with a neural network. Hence, unstable GANs and blurry VAEs.
+    </p>
+    <p style="margin-left:2em;color:gray;">
+        questionable := neural networks learn low frequency functions first, so
+        regressing anything non-smooth puts you in overfitting territory
+    </p>
+    <p>
+        Diffusion works, practically speaking, because the model is always
+        regressing a smooth function.
+    </p>
+    <p style="margin-left:2em;color:gray;">
+        To see this, note that:
+    </p>
+    <ol style="margin-left:1em;color:gray;">
+        <li> The score of a single gaussian with fixed variance is linear
+        <li> At each timestep, the diffusion model is regressing a weighted
+            combination of Gaussian scores / linear functions, one for each
+            point in the training dataset.
+        <li> Each weight is based on the distance to that point, i.e.
+            proportional to the Gaussian density, which is itself smooth.
+        <li> The variances of these Gaussians over time is also smooth, usually.
+    </ol>
+    <p>
+        I'd hazard a guess that practically any approach that can decompose a
+        generative process for a non-smooth distribution into a series of
+        effectively smooth functions would perform as well as diffusion.
+        <span style="color:lightgray;">yadda yadda cold diffusion</span>
+    </p>
+    <p>
+        The reason that diffusion has never really brought anything new to
+        discrete spaces (read: it's just BERT with extra steps) stems from the
+        fact that this advantage doesn't transfer.
+    </p>
+    <p>
+        In particular, it's generally possible to model distribution over
+        discrete input + output vocabularies with a smooth-ish function. E.g.
+        focusing on just transformer-based LLMs for now, due to the input
+        embedding layer, unique tokens can be mapped to arbitrarily distant
+        regions in a transformer's input embedding space. If no two inputs are
+        close together, then it's already possible to fit the data with a
+        smooth function.
+    </p>
+    <p>
+        Of course, this only really applies to vocabulary-style discrete
+        inputs, i.e. each dimension is a categorical variable. For ordinal
+        variables, where some sense of input distance returns, diffusion could
+        still have a place. Images are technically discrete variables with 256
+        bins, after all.
+    </p>
+</div>
+</body>
+</html>
+

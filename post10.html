@@ -23,17 +23,20 @@
     </p>
     <p>
         Ultimately, a generative model is a function which maps noise to data.
-        When modeling real world continuous data, like images, this function
+        When modeling real world continuous data, like images, this mapping
         will almost always be fairly non-smooth and... somewhat questionable to
-        regress with a neural network. Hence, unstable GANs and blurry VAEs.
+        directly regress with a neural network. Hence, unstable GANs and blurry
+        VAEs.
     </p>
     <p style="margin-left:2em;color:gray;">
         questionable := neural networks learn low frequency functions first, so
-        regressing anything non-smooth puts you in overfitting territory
+        regressing anything non-smooth puts you in overfitting territory. see:
+        <a href=https://arxiv.org/abs/1806.08734>arxiv.org/abs/1806.08734</a>
+        and <a href=https://arxiv.org/abs/2403.02241>arxiv.org/abs/2403.02241</a>
     </p>
     <p>
-        Diffusion works, practically speaking, because the model is always
-        regressing a smooth function.
+        Diffusion works, practically speaking, because the model itself is
+        almost always regressing something smooth.
     </p>
     <p style="margin-left:2em;color:gray;">
         To see this, note that:
@@ -47,6 +50,12 @@
             proportional to the Gaussian density, which is itself smooth.
         <li> The variances of these Gaussians over time is also smooth, usually.
     </ol>
+    <p style="margin-left:2em;color:gray;">
+        Of course, this no longer holds towards the end of the reverse process,
+        where the variance approaches zero, but by that point the step size is
+        small enough such that even if the model is underfit, the impact on the
+        resulting generations is relatively small.
+    </p>
     <p>
         I'd hazard a guess that practically any approach that can decompose a
         generative process for a non-smooth distribution into a series of

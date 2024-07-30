@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-07-30] BYOL learning dynamics are simple and well understood </h1>
+    <p>
+        <span style="color:gray;">This post is essentially a simplified version
+        of one my earlier posts and is meant to help build some basic intuition
+        about the learning dynamics of BYOL. The concepts covered in this post
+        are not novel. I see many people still citing BYOL as some kind of
+        unexplainable arcane wizardry, or describing it as a distillation-based
+        method or as a method which relies on a non-symmetric architecture.
+        The latter are both technically true, but fail to capture what's
+        actually going on. This post is essentially an explanation of how BYOL
+        works, as fast as possible. </span>
+    </p>
+    <p>
+        A quick refresher on Bootstrap Your Own Latent (BYOL) (<a href=https://arxiv.org/abs/2006.07733>arxiv.org/abs/2006.07733</a>):
+    </p>
+    <ol>
+        <li> the encoder maps an image to a vector embedding \(=: z\) </li>
+        <li> the predictor takes an embedding, \(z\), of an augmentation of an image and regresses the average embedding over all augmentations of that image \(=: \overline{z}\)</li>
+        <li> loss = the predictor's error </li>
+    </ol>
+    <p>
+        Somehow, the encoder doesn't learn to map everything to the same
+        vector, which would technically make the predictor's loss minimal. Why?
+    </p>
+    <p>
+        We can assume the predictor is nearly optimal.
+        <span style="color:gray;">(This is reasonable since, in practice, the
+        target for the predictor changes more slowly than the encoder does, due
+        to momentum. The BYOL authors noticed similar effects when removing
+        momentum and increasing the predictor's learning rate by 10x, which has
+        a similar effect)</span>
+    </p>
+    <p>
+        On any particular image input, the encoder is incentivized to make the
+        predictor more accurate. Due to momentum / the stop grad (see <a
+        href=https://arxiv.org/abs/2011.10566>arxiv.org/abs/2011.10566</a>),
+        from the encoder's perspective, the predictor is fixed.
+    </p>
+    <p>
+        Intuitively, an optimal predictor will generally have lower error on
+        inputs where it is obvious which image in the training dataset an
+        embedding came from.
+        <span style="color:gray;">(This is... not always true, but has value as intuition.)</span>
+        For example, if only one image in the training dataset has augmentations that
+        ever map to a given point in embedding space, then the optimal
+        predictor will perfectly predict that image's average embedding, and no
+        update to the encoder can result in better loss for that input.
+    </p>
+    <p>
+        If we take the above as true, then, during training, the encoder is
+        incentivized to try to map embeddings of distinct images to distinct
+        regions in embedding space, avoiding collapse. See <a href=/post2.html>my previous post</a> for more details.
+    </p>
+    <p style="color:gray;">Additional Resources:</p>
+    <ol>
+        <li> <a href=https://arxiv.org/abs/2006.07733>arxiv.org/abs/2006.07733</a> - BYOL, and its various ablations: </li>
+        <ul>
+            <li> <a href=https://arxiv.org/abs/2011.10566>arxiv.org/abs/2011.10566</a> - SimSiam, or BYOL without momentum</li>
+            <li> <a href=https://arxiv.org/abs/2010.10241>arxiv.org/abs/2010.10241</a> - BYOL without batchnorm</li>
+        </ul>
+        <li> <a href=https://arxiv.org/abs/2212.03319>arxiv.org/abs/2212.03319</a> - Related: non-collapse w/ linear predictors</li>
+        <ul>
+            <li> BYOL with a linear predictor recovers a spectral decomposition of the <a href=https://arxiv.org/abs/2106.04156>augmentation graph</a> </li>
+        </ul>
+        <li> <a href=https://arxiv.org/abs/2301.08243>arxiv.org/abs/2301.08243</a> - Related: JEPA</li>
+        <li> <a href=https://arxiv.org/abs/2008.01064>arxiv.org/abs/2008.01064</a> - Related: SSL and conditional independence
+        </li>
+        <ul>
+            <li> Here, \(Y\) can be seen as the instance id of each training image </li>
+        </ul>
+    </ol>
+</div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-08-14] Beyond next token prediction: data as interaction </h1>
+
+    <p>
+        From a certain view, when we (humans) read a book, we aren't learning
+        via next token prediction in its most direct sense.
+        <span class=note>
+            After all, simply reading the string "1 + 1 = 3" doesn't make you
+            more likely to believe that 1 + 1 is actually 3, but every instance of
+            the string in an LLM's training dataset makes the model slightly more
+            wrong.
+        </span>
+    </p>
+
+    <p>
+        However, from an alternative view, humans do, in general, learn what to
+        expect---the feeling of surprise and our tendency to become less
+        surprised at predictable outcomes is likely baked into our psychology.
+    </p>
+
+    <p>
+        Reconciling these views is the idea that sources of text, like books or
+        websites, are technically part of our environment, and our action space
+        isn't just ingesting and repeating the content in sequential order.
+    </p>
+
+    <p>
+        We have much less control when it comes to the part of us that
+        regulates surprise. Next token prediction is the natural mechanism we
+        should use for components of AI systems dealing with novelty and
+        memory. This... does leave reward as possibly the only signal for
+        inducing behavior, but at scale I would imagine that imitation of past
+        experiences, as just one of multiple general strategies for achieving
+        the agent's desired outcomes, does emerge naturally.
+    </p>
+
+    <p>
+        Architecturally, I would imagine a policy (with not-much context)
+        querying some kind of "memory model", a compressed representation of
+        the past contained entirely within the parameters of a neural network
+        trained via next token prediction. This seems especially plausible
+        since I'd argue that our own long term memory seems to work similarly
+        to large models trained via supervised learning.
+    </p>
+
+    <p>
+        IMO, model training should in general look a lot more like the way we
+        raise humans. If you want an agent to know facts from the internet,
+        just make the internet a part of its environment, and encourage it to
+        use it.  This encouragement probably doesn't take the form of
+        specifically making internet usage or whatever part of its reward
+        function, but instead rewarding general "novelty", or perhaps putting
+        the agent in a situation where it wants to follow someone's
+        instructions for some reason, and have that person motivate it to learn
+        from the internet, idk.
+    </p>
+
+    <p>
+        In humans we call those motivations "curiosity" and "love", and I'm a
+        bit too tired at the moment to come up with any other motivations
+        placed high up on Maslow's hierarchy, so whatever...
+        <span class=note>
+            (uh, presumably, we'd only want our superintelligence
+            or whatever to be motivated by things above the bottom two
+            levels... screw Asimov's dumb laws, around here we ensure safety by
+            just designing reward functions really carefully. or maybe that's
+            just the same thing, actually.)
+        </span>
+    </p>
+</div>
+</body>
+</html>
+

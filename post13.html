@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+    h1 { font-family: 'Georgia'; }
+    p {
+        font-family: 'Georgia', serif;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+</style>
+</head>
+<body>
+<div class="content" height="90em">
+    <p><a href="/">[back to home]</a></p>
+
+    <h1>[2024-11-06] Two steps to AGI</h1>
+
+    <p>
+        The modern art of foundation model pre-training is a study of building
+        strong priors, and priors are obviously crucial for intelligent agents.
+        After all, a reasonable estimate for the sample complexity of
+        fine-tuning an agent with PPO on an unseen environment with a single,
+        sparse reward is 1 / (zero-shot success rate).
+    </p>
+
+    <p>
+        That being said, I would argue that the current attempts toward
+        building a "foundation model for robotics", trained using the same
+        methodologies as those used to pretrain large language models, is
+        fundamentally inadequate for sample efficient <em>out-of-domain</em>
+        generalization, <em>regardless</em> of scaling.
+
+    <p>
+        To me, the obvious issue is the tendency to train and evaluate with a
+        notion of episodes. To put it simply, when humans learn to do a task,
+        the attempts they take to complete that task can be intuitively seen as
+        independent trials: we try once, learn from what happened, and repeat.
+        In RL, we took this trial-and-error idea and made it explicit: most RL
+        updates can be seen as variants of rolling out a noisy version of the
+        current best policy and increasing the state-conditioned likelihood of
+        the actions taken during episodes which went well.
+    </p>
+
+    <p>
+        In particular, the agent's policy is typically conditioned on only the
+        Markovian state of the environment, so the only evidence that the agent
+        has ever had previous experiences at all lies in the parameters of
+        whatever neural network or other function approximation we're using for
+        the policy. This is, in theory, enough for intelligence, given a
+        sufficiently powerful method of performing model updates.
+    </p>
+
+    <p>
+        Unfortunately, the typical way that policy parameters do get updated---simply
+        doing gradient ascent to increase the likelihood of actions which went
+        well---is broadly inadequate for achieving human sample efficiency, since
+        our behavior and how we explore is conditioned on much more information
+        from past experiences than just the value of their resulting states.
+    </p>
+
+    <p>
+        For example, humans will often try new strategies which are
+        <em>semantically</em> different from those of previous trials during
+        the initial exploration of a new problem space. If you ran Mario into a
+        Goomba, causing his unfortunate demise, next time you try jumping
+        instead. This kind of "semantic learning" does not occur during typical
+        RL fine-tuning of a pre-trained policy, regardless of how good the
+        policy's zero-shot performance is. (I'm mostly talking about
+        fine-tuning with model-free RL algorithms like PPO here, which, to my
+        knowledge, is the extent of how most RL fine-tuning of foundation
+        models is done at the time of writing.) Even if the policy's prior has
+        jumping as the second most likely option, most practical RL algorithms
+        used today are going to need multiple epochs until the first most
+        likely option is unlearned---they won't learn fast and immediately the
+        way humans do.
+        <!-- <span style="color:gray">This post is specifically about the
+        problem of adaptation to new domains. Given infinite data and compute,
+        we could imagine pretraining a policy good enough such that it zero-shot
+        does perfectly in every domain we would ever be interested in. But the
+        problem of adapting to new domains remains interesting all the way up
+        to that point.</span> -->
+    </p>
+
+    <p>
+        In my mind, fast and immediate learning arises from two things. The first
+        is to condition your policy on all previous experiences from all past
+        episodes, including past observations, actions taken, and rewards
+        received. The evidence that past experiences have occured should be
+        obvious, and no two attempts at the same task, during training or
+        evaluation, should ever involve an agent with the same exact state.
+        Note that this is equivalent to simply redefining your environment as a
+        POMDP and putting everything into a single episode.
+    </p>
+
+    <p>
+        This can be done by, for example, including all previous episodes in
+        the context of a transformer-based policy. Obviously, this is absurdly
+        expensive. Maybe there will come a day when transformers support
+        real-time inference with a long enough context to fit a full replay of
+        an entire human's lifetime into their context, but that certainly isn't
+        soon.
+    </p>
+
+    <p>
+        How do humans do it? Our long term memory is surprisingly good at
+        keeping track of information in terms of the raw density at which we
+        can store them in our brains. It's true that what we can remember is
+        only approximately correct at best, and we sometimes need the correct
+        "triggers" to recall certain memories, and memories often won't stick
+        unless we do repeated rehearsal... wait. These properties draw many
+        similarities with the way models trained via next token prediction
+        work. After all, large language models do indeed, somehow or another,
+        have some approximate compressed representation of the entire internet
+        stored in just a few gigabytes. Maybe we can do something similar to
+        dynamically compress the entirety of an agent's past experiences into a
+        usable form. I could imagine, for example, training one transformer to
+        store memories via purely next token prediction on the agent's
+        experiences, while the overall policy network utilizes this
+        transformer, without directly updating it, as just one component of the
+        overall the forward pass.
+    </p>
+
+    <p>
+        Of course, merely providing past context as input doesn't automatically
+        solve learning. We can see that Mario ran into the Goomba last time and
+        perished, but why does that imply that we should jump this time around?
+    </p>
+
+    <p>
+        This is where the second piece of the puzzle lies. After training on
+        sufficiently diverse tasks, us humans have gradually learn to
+        learn---we know what worked and what didn't work when we tried to learn
+        new things in the past, and we know how adapted in order to succeed.
+        Learning by imitation could be explained as an evolutionary phenomenon
+        when human babies or certain species of animals do it, but in my
+        opinion, human adults generally seek out and imitate a tutorial when
+        learning something new primarly because we understand, from experience,
+        that imitating an expert is an effective method for learning in
+        general.
+    </p>
+
+    <p>
+        In other words, all we need for sample efficient learning of new tasks
+        is to train agents on the task of learning to do new tasks. Given
+        sufficient data of this type---tuples of (everything I've tried and
+        experienced already, what I tried next, and whether that
+        succeeded)---even something simple like PPO will eventually learn what
+        kinds of things to do to better learn to solve a new tasks. This
+        includes things like "trying out a semantically different strategies
+        when the initial strategy fails" in Mario, for example.
+    </p>
+
+    <p>
+        Naturally, learning to learn requires a Herculean amount of curriculum
+        engineering---building a simulator rich enough to provide a lifetime of
+        unique tasks, which range in difficulty all the way down to tasks that a
+        newborn toddler could do, and all the way up to the tasks which we want
+        the AGI to solve, while providing enough diversity so that the
+        agent can't take shortcuts. This is the main reason why I don't think
+        that AGI will come within the next two years. It might even be easier
+        to just deploy a humanoid robot in the real world and raise it like a
+        human.
+    </p>
+</div>
+</body>
+</html>
+

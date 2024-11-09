@@ -48,9 +48,11 @@
             <a href=https://github.com/buoyancy99/diffusion-forcing>GitHub repository</a>
             at the time of writing supports a variant of diffusion forcing with
             temporal attention, but it seems to use an inefficient
-            implementation with a short sliding window. Here, we describe how
-            KV caching can be used to improve the inference efficiency of
-            diffusion forcing.
+            implementation limiting its ability to be used to generate
+            efficiently while conditioning on longer contexts. KV caching with
+            diffusion forcing is slightly non-trivial due to how the noise
+            levels can change during the generation process. Here, we describe
+            an approach to KV caching for the "pyramid" noise schedule.
         </p>
 
         <h2>Background</h2>
@@ -58,10 +60,9 @@
         <p>
             With diffusion on sequential data, we have two notions of "time":
             the timestep of the data itself (e.g. video frame index, MDP
-            timestep) which we will index with subscript \(t\), and the
-            timestep of the diffusion forward process, which will generally be
-            referred to as the "noise level" instead and be indexed with
-            superscript \(k\).
+            timestep) which we will index with \(t\), and the timestep of the
+            diffusion forward process, which will generally be referred to as
+            the "noise level" instead and be indexed with \(k\).
         </p>
 
         <p>
@@ -79,7 +80,7 @@
             timestep with positive noise.
         </p>
 
-        <h2>Part 1: Open-Loop Generation</h2>
+        <h2>Open-Loop Generation</h2>
 
         <p>
             For applications such as video generation, we receive some fixed
@@ -176,7 +177,7 @@
             length are large relative to the number of noise levels.
         </p>
 
-        <h2>Part 2: Online Planning </h2>
+        <h2>Online Planning </h2>
 
         <p>
             When using a world model for planning, we often have a situation

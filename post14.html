@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        h1 {
+            font-family: 'Georgia';
+        }
+
+        p,
+        li {
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .column {
+            float: left;
+            width: 25%;
+            padding-left: 3%;
+            padding-right: 3%;
+        }
+
+        .row::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>[2024-11-09] KV Caching with Diffusion Forcing</h1>
+
+        <p>
+            <a href=https://arxiv.org/abs/2407.01392>Diffusion forcing</a> is
+            an approach to generative modeling of sequential data by
+            parameterizing a diffusion model with an autoregressive
+            architecture and training with independent noise levels sampled per
+            timestep. The
+            <a href=https://github.com/buoyancy99/diffusion-forcing>GitHub repository</a>
+            at the time of writing supports a variant of diffusion forcing with
+            temporal attention, but it seems to use an inefficient
+            implementation with a short sliding window. Here, we describe how
+            KV caching can be used to improve the inference efficiency of
+            diffusion forcing.
+        </p>
+
+        <h2>Background</h2>
+
+        <p>
+            With diffusion on sequential data, we have two notions of "time":
+            the timestep of the data itself (e.g. video frame index, MDP
+            timestep) which we will index with subscript \(t\), and the
+            timestep of the diffusion forward process, which will generally be
+            referred to as the "noise level" instead and be indexed with
+            superscript \(k\).
+        </p>
+
+        <p>
+            The diffusion forcing paper describes a "pyramid" noise scheduling
+            matrix which, at each iteration of inference, has no noise up to
+            some timestep \(t\), then monotonically increasing noise levels
+            until the maximum noise level \(K\) is reached at timestep \(t +
+            K,\) and then all remaining timesteps have the maximum noise level
+            \(K.\) Note that \(k\) an \(K\) refer to a specific index and the
+            total number of indices in a discretization of the variance
+            schedule rather than to the variance itself. This is the noise
+            scheduling matrix we consider for the remainder of the post---it is
+            particularly amenable to caching, since the noise level at any
+            given timestep depends only on its relative position to the first
+            timestep with positive noise.
+        </p>
+
+        <h2>Part 1: Open-Loop Generation</h2>
+
+        <p>
+            For applications such as video generation, we receive some fixed
+            context and are tasked with generating some arbitrary length
+            continutation of the video, without receiving any new observations
+            over time. Note that if \(T\) is the number of new frames we wish
+            to generate, this requires \(K + T - 1\) evaluations of the
+            diffusion model, since there are \(K + T - 1\) iterations of unique
+            sequences of noise levels. The first iteration has noise level
+            \(K\) for all \(T\) frames, the \(K\)th iteration starts at the
+            lowest noise level on the first frame, and the \(K + T - 1\)th
+            iteration starts at the lowest noise level on the last frame.
+        </p>
+
+        <p>
+            Example "pyramid" noise levels with \(K = 3, T = 4\) and generating
+            from \(S=2\) frames of context:
+        </p>
+
+        <div class="row">
+            <div class="column">
+                <p style="text-align: center"> Iteration \(1\) </p>
+                <img src="post14_fig1a.png" style="width:100%">
+            </div>
+            <div class="column">
+                <p style="text-align: center"> Iteration \(K\) </p>
+                <img src="post14_fig1b.png" style="width:100%">
+            </div>
+            <div class="column">
+                <p style="text-align: center"> Iteration \(K + T - 1\) </p>
+                <img src="post14_fig1c.png" style="width:100%">
+            </div>
+        </div>
+
+        <p>
+            Note that a cached KV for any particular prefix [:t] can only be
+            re-used if all noise levels in that prefix are identical on the
+            next iteration. The only timesteps which maintain the same noise
+            level on the next iteration are the ones with noise level \(0\) or
+            \(K,\) so the usefulness of KV caching is limited to only those
+            inputs. Note that the model predictions for tokens which stay at
+            noise level \(K\) have no impact on the generation process, so we
+            can exclude the corresponding suffix entirely.
+        </p>
+
+        <p>
+            If there are \(S\) frames of context, \(K\) distinct noise levels,
+            and we are generating \(T\) frames, then:
+        </p>
+        <ol>
+            <li>
+                The first iteration requires predictions for the first \(S\)
+                timesteps, and we can caches the first \(\max(0, S - K + 1)\)
+                resulting keys and values corresponding to the completely
+                un-noised input timesteps.
+            </li>
+            <li>
+                The second iteration requires predictions for the first \(S +
+                1\) timesteps, but we can re-use the cached values from the
+                first iteration if available, so the number of <em>new</em>
+                tokens we process is at most \(K\).
+            </li>
+            <li>
+                and so on, each iteration after the first only processing at
+                most \(K\) new tokens.
+            </li>
+        </ol>
+
+        <div class="row">
+            <div class="column">
+                <p style="text-align: left">
+                    Iteration \(i - 1\)
+                    <br> Compute outputs for \(t = 0, \ldots, 4\)
+                    <br> Save KV for \(t = 0, 1\)
+                </p>
+                <img src="post14_fig2a.png" style="width:100%">
+            </div>
+            <div class="column">
+                <p style="text-align: left">
+                    Iteration \(i\)
+                    <br> Re-use cached KV for \(t = 0, 1\)
+                    <br> Compute outputs for \(t = 0, \ldots, 5\)
+                </p>
+                <img src="post14_fig2b.png" style="width:100%">
+            </div>
+        </div>
+
+        <p>
+            With \(O(K + T)\) total iterations, where each iteration involves
+            up to \(S + T\) timesteps, full causal self-attention without
+            caching incurs a time complexity of \(O((K + T)(S + T)^2)\). With
+            caching, we can bring this down to \(O((K + T) \min(K, S + T) (S
+            + T))\), which can result in a speedup if the context or generation
+            length are large relative to the number of noise levels.
+        </p>
+
+        <h2>Part 2: Online Planning </h2>
+
+        <p>
+            When using a world model for planning, we often have a situation
+            where we generate a plan with some horizon \(T\) number of frames
+            into the future, take an action according to that plan, and repeat.
+        </p>
+
+        <p>
+            Here, we have an additional opportunity for caching. Let \(s\)
+            denote the <em>current</em> context length, i.e. the number of real
+            environment steps taken so far. (Yes, we now have <em>three</em>
+            notions of "time": diffusion process noise level \(k\), plan
+            timestep \(t\), and environment step \(s\).).
+        </p>
+
+        <p>
+            During the generation process for the current environment step,
+            any given timestep of the plan only takes on each noise value
+            from \(1\) through \(K-1\) most once, so the KV for these timesteps
+            weren't useful for open-loop generation. However, in the online
+            planning scenario, during environment step \(s + 1\), each plan
+            timestep \(t\) with noise level in \(1, ..., K - 1\) takes on the
+            same noise level at planning iteration \(i\) as it did during
+            environment step \(s\) on planning iteration \(i + 1\). One can
+            imagine caching timesteps corresponding to those noise levels too,
+            and not just the timesteps with noise 0.
+        </p>
+
+        <p>
+            This doesn't result in an asymptotic improvement, though, since
+            typically the "majority" of noise levels of preceding timesteps are
+            noise level 0. Up to \(K\) new tokens may need to be re-computed
+            anyway, since the new observation from the environment step
+            invalidates the previous cache for any timesteps \(t \ge s.\)
+        </p>
+        <p>
+            Practically speaking, the biggest efficiency gain here would come
+            from keeping just one set of keys and values from the current plan,
+            since this lets you avoid paying the constant up-front cost of the
+            first iteration of open-loop generation on the next environment
+            step.
+        </p>
+    </div>
+</body>
+
+</html>

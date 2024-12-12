@@ -1,73 +1,76 @@
 <!doctype html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Jerry Xiong</title>
     <link rel="stylesheet" href="styles.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
+
 <body>
-<div class="content" height="90em">
-    <p><a href="/">[back to home]</a></p>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
 
-    <h1>[2024-06-13] jepa is obviously just byol</h1>
-    <p>
-        like sure jepa uses masking, byol samples two global augmentations
-    </p>
-    <p>
-        but predicting the embedding of the disjoint mask is exactly as
-        difficult as predicting the embedding of the unmasked image
-    </p>
-    <p>
-        to be fair masking is possibly a marginally better operator than
-        standard image augmentations for this kind of representation learning
-    </p>
-    <p>
-        but it still feels disingenuous to describe jepa as a completely new
-        paradigm
-    </p>
-    <p>
-        "what is this guy talking about" uhh have some links
-    </p>
-    <ol>
-        <li> <a href=https://arxiv.org/pdf/2301.08243>I-JEPA paper</a> </li>
-        <li> <a href=https://arxiv.org/pdf/2404.08471>V-JEPA paper</a> </li>
-        <li> <a href=https://arxiv.org/pdf/2006.07733>BYOL paper</a> </li>
-        <li> probably the most succinct explanation for <a
-        href=https://proceedings.mlr.press/v202/tang23d/tang23d.pdf>why
-BYOL-likes collapsen't</a>: just ignore the RL part and read P^pi like the
-augmentation operator </li>
-        <li> what <a href=https://arxiv.org/pdf/2106.04156>"augmentation operator"?</a> </li>
-        <li> "oh but jepa conditions on the thing" <a href=https://arxiv.org/pdf/2406.02035>and it doesn't really matter</a>  </li>
-    </ol>
-    <p>
-        non-contrastive learning with a nonlinear predictor is just contrastive
-        learning with a spicier nonlinear distance function [citation needed] 
-    </p>
-    <p>
-        it's all about finding a low dimensional representation which is
-        unique-ish to your pre-augmentation / pre-masking input
-    </p>
-    <p>
-        unfortunately you can say the same thing about classic reconstruction
-        based models, contrastive algorithms, or even literal next-token
-        prediction
-    </p>
-    <p>
-        so the claim that jepa leads to agi, or even anything more than
-        just slightly better numbers on a benchmark compared to standard
-        methods, is just incorrect
-    </p>
-    <p>
-        they're still cool algorithms tho don't get me wrong i heckin love
-        byol-likes / jepa-likes
-    </p>
-    <p>
-        but for real jepa is literally <em>just</em> byol, but the encoder
-        instancewise shards the masking operator instead of the standard image
-        augmentation operator
-    </p>
-</div>
+        <h1>[2024-06-13] jepa == byol</h1>
+        <p>
+            like sure jepa uses masking, byol samples two global augmentations
+        </p>
+        <p>
+            but predicting the embedding of the disjoint mask is exactly as
+            difficult as predicting the embedding of the unmasked image
+        </p>
+        <p>
+            to be fair masking is possibly a marginally better operator than
+            standard image augmentations for this kind of representation learning
+        </p>
+        <p>
+            but it still feels disingenuous to describe jepa as a completely new
+            paradigm
+        </p>
+        <p>
+            "what is this guy talking about" uhh have some links
+        </p>
+        <ol>
+            <li> <a href=https://arxiv.org/pdf/2301.08243>I-JEPA paper</a> </li>
+            <li> <a href=https://arxiv.org/pdf/2404.08471>V-JEPA paper</a> </li>
+            <li> <a href=https://arxiv.org/pdf/2006.07733>BYOL paper</a> </li>
+            <li> probably the most succinct explanation for <a
+                    href=https://proceedings.mlr.press/v202/tang23d/tang23d.pdf>why
+                    BYOL-likes collapsen't</a>: just ignore the RL part and read P^pi like the
+                augmentation operator </li>
+            <li> what <a href=https://arxiv.org/pdf/2106.04156>"augmentation operator"?</a> </li>
+            <li> "oh but jepa conditions on the thing" <a href=https://arxiv.org/pdf/2406.02035>and it doesn't really
+                    matter</a> </li>
+        </ol>
+        <p>
+            non-contrastive learning with a nonlinear predictor is just contrastive
+            learning with a spicier nonlinear distance function [citation needed]
+        </p>
+        <p>
+            it's all about finding a low dimensional representation which is
+            unique-ish to your pre-augmentation / pre-masking input
+        </p>
+        <p>
+            unfortunately you can say the same thing about classic reconstruction
+            based models, contrastive algorithms, or even literal next-token
+            prediction
+        </p>
+        <p>
+            so the claim that jepa leads to agi, or even anything more than
+            just slightly better numbers on a benchmark compared to standard
+            methods, is just incorrect
+        </p>
+        <p>
+            they're still cool algorithms tho don't get me wrong i heckin love
+            byol-likes / jepa-likes
+        </p>
+        <p>
+            but for real jepa is literally <em>just</em> byol, but the encoder
+            instancewise shards the masking operator instead of the standard image
+            augmentation operator
+        </p>
+    </div>
 </body>
-</html>
 
+</html>

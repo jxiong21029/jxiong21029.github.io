@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        h1 {
+            font-family: 'Georgia';
+        }
+
+        p,
+        li {
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>[2024-12-13] On Meta-RL, again</h1>
+
+        <p>
+            What makes humans sample efficient when adapting to new tasks?
+        </p>
+
+        <p>
+            I think it's impractical to express learning as a gradient update. Gradient
+            is designed for small, local updates, but human "learning" can involve
+            fairly extreme changes to beliefs or behavior.
+        </p>
+
+        <p>
+            For example, if suddenly your mouse cursor inverts, so moving the mouse
+            right moves the cursor left, mouse down moves cursor up, etc. It's
+            reasonable for a human to realize this within seconds and adapt their
+            behavior accordingly, e.g. by trying to do the exact inverse of their
+            intended mouse movements.
+        </p>
+
+        <p>
+            Any sample efficient learning paradigm has to be able to work as well as
+            humans in that scenario, which I believe automatically disqualifies any
+            approach that works without some kind recurrent state, or some way of taking
+            previous experience / samples in directly as input.
+        </p>
+
+        <p>
+            An algorithm in which the policy conditions only on current observation is
+            probably doomed---using gradient updates to entirely invert the policy
+            within just a few samples? Humans are only capable of learning here because
+            of our capabilities for in-context learning, as we're able to condition
+            directly on the sequences of interactions which just occurred and infer the
+            correct action to take. We're not completely rewriting our policy, but
+            rather the current context is simply located in a new region of input space.
+        </p>
+
+        <p>
+            I also have doubts about the potential explanation for the human behavior
+            here as "learning a new model for the world." A human would indeed be able
+            to answer the question of "how would the cursor move, if my mouse moved like
+            this" after a few seconds of behavior, but does the capability of emulating
+            a world model indicate that "world model learning" is a fundamental
+            component of human intelligence?
+        </p>
+
+        <p>
+            In general, the notion that humans plan by learning a world model is an
+            abstraction of the complicated process we use to condition on previous
+            experience---probably quite a good abstraction, I'd say, but it should also
+            be only an abstraction at most. Using the idea of world modeling to inform
+            algorithm design, i.e. as a prior for the way computation
+            (context/experience-conditional inference) should be performed, will
+            probably go the same way as all other priors for intelligent behavior have
+            gone---gradually fading to irrelevance as data and computation scale, by way
+            of the bitter lesson.
+        </p>
+
+        <p>
+            In this case, the "scaling" for experience-conditional inference comes in
+            the form of having "learned to learn" on a wide variety of tasks and
+            experiences. In-context learning in language models arises simply as a
+            result of doing next-token prediction given complicated contexts, and in
+            this case, it's no different.
+        </p>
+
+        <p>
+            Take the policy or the value function in reinforcement learning, make
+            them conditional on previous experience, and train on a sufficiently diverse
+            dataset of (experience, reward) pairs. This could include experiences of the
+            agent's own failures and successes, experience on simpler versions of the
+            same task, experiences which include observations of demonstrations of
+            success or failure.
+        </p>
+
+        <p>
+            In general, learning is conditioning on samples, and in general,
+            conditioning is making something an input to your neural network. I really
+            don't think it needs to be any more complicated than that.
+        </p>
+    </div>
+</body>
+
+</html>

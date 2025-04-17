@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        h1 {
+            font-family: 'Georgia';
+        }
+
+        p,
+        li {
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>[2025-04-17] disentangling raw and effective sample efficiency</h1>
+
+        <p style="color:gray">
+            Maybe I've beat this point to death already, but are any other points truly
+            important?
+        </p>
+
+        <p>
+            What I refer to as raw sample efficiency is the "typical" sample efficiency
+            you would probably think of in the context of tabula rasa RL, or in the
+            context of typical transfer learning through fine-tuning: the literal number
+            of samples or trajectories of the task of interest you need to train on to
+            reach some target level of performance---samples which only influence the
+            model's behavior at test time indirectly, typically by having modified the
+            model's parameters via gradient descent.
+        </p>
+
+        <p>
+            By effective sample efficiency, I mean any form of taking previously
+            observed information into account when learning to do a new task. For
+            example, reasoning about previous experience by directly conditioning on
+            them in-context, or being able to infer correct behaviors from language
+            instructions and/or third-person video demonstrations.
+        </p>
+
+        <p>
+            Humans learning to do some kind of motor skill at a young age, like
+            balancing on one foot, mostly measures their raw sample efficiency, while
+            most human learning later in life, especially when we're learning to do a
+            new cognitive, technical task, is where effective sample efficiency is most
+            relevant.
+        </p>
+
+        <p>
+            Effective sample efficiency reduces to raw sample efficiency when it comes
+            to convergence, i.e. mastering a specific skill. Tasks that take lots of
+            practice, e.g. playing an instrument or a sport, often do derive some value
+            from practicing _smarter_, but simply doing _more_ practice is usually
+            indispensable. Human raw sample efficiency isn't necessarily amazing: it can
+            take us thousands of hours to build muscle memory to master these sorts of
+            skills. But in the early stages of learning a new task, our effective
+            sample efficiency is much higher than our raw sample efficiency: we can
+            adapt quickly by reasoning over past experiences.
+        </p>
+
+        <p>
+            E.g. for humans playing Atari games, like Montezuma's revenge, they can
+            reason about what rooms they haven't seen before or what exits they haven't
+            tried before to know where to explore next---they don't have to stumble
+            around randomly until they obtain a reward, and even a "curiosity"-based
+            reward signal doesn't fully encapsulate what humans do, since those require
+            gradually learning through trial-and-error what behaviors _tend_ to lead to
+            new states, rather than simply inferring what those behaviors would be
+            through reasoning.
+        </p>
+
+        <p>
+            E.g. college undergrads can learn to do certain types of math problems by
+            reading a textual description of what the problem and the solution method
+            and maybe doing like, one practice problem. Whereas traditional RL with
+            language models requires making repeated attempts at solving random
+            instances of the problem until they stumble upon the correct output enough
+            times to identify correlations between the problem statement and those
+            correct outputs.
+        </p>
+
+        <p>
+            Most theoretical results about the sample efficiency of reinforcement
+            learning apply to raw sample efficiency. Additionally, classical RL research
+            often optimizes for raw sample efficiency while comparing to human effective
+            sample efficiency.
+        </p>
+
+        <p>
+            However, improving effective sample efficiency isn't a question of designing
+            better algorithms, but rather emerges with standard RL by designing the
+            training environment well: training on tasks which, rather than rewarding
+            just capability, actually require the agent to condition on previous
+            experience to perform well.
+        </p>
+
+        <p>
+            Language models demonstrate some effective sample efficiency through
+            in-context learning, but are limited by their training data. The internet
+            has a lot of data corresponding to human behaviors, but not a lot of data
+            about the process of learning those behaviors. This is sort of like the
+            <a href="https://arxiv.org/abs/2501.04682">meta-CoT problem</a>, but here,
+            the true data generative process includes repeated interaction with an
+            external environment, and reasoning about the states resulting from actions
+            taken, not just reasoning in a vacuum over only your own language token
+            outputs.
+        </p>
+
+        <p>
+            The simplest instantiation of training agents to condition on previous
+            experience is the traditional meta-learning setup, where the agent is given
+            a task sampled from a distribution of tasks, and has to learn to perform the
+            task within some number of episodes. This... is fine, IMO, although it
+            typically only induces "conditioning about your own attempts at the exact
+            same task" and it requires the test-time evaluation to take the same format
+            of some number of episodes in a row with resets in between. Obviously, human
+            meta-learning occurs in a much less structured manner (i.e. no resets
+            between attempts, not necessarily the exact same task each time, etc), as
+            well as being able to condition on other forms of information, like language
+            instructions. IMO, true effective sample efficiency will arise only from
+            designing training environments which involve this kind of
+            loosely-structured meta learning over a wide distribution of
+            tasks with environment-provided language grounding.
+        </p>
+</body>
+
+</html>

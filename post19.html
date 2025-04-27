@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font: 14px/1.3 sans-serif;
+            background: #111;
+        }
+
+        h1 {
+            font-family: 'Georgia';
+            color: black
+        }
+
+        p {
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #viz {
+            display: block;
+            margin: 0 auto;
+            background: #222;
+        }
+
+        .axis line,
+        .axis path {
+            stroke: #555;
+            stroke-width: 1
+        }
+
+        .axis text {
+            pointer-events: none;
+            user-select: none;
+            fill: #777;
+        }
+
+        .vector {
+            stroke-width: 4;
+            pointer-events: none;
+        }
+
+        .handle {
+            cursor: pointer;
+        }
+
+        .flow {
+            stroke: #888;
+            stroke-width: 1;
+            opacity: .55;
+        }
+
+        .legend text {
+            fill: #bbb;
+            font-size: 13px;
+            dominant-baseline: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>[2025-04-26] MLP visualization (prototype)</h1>
+
+
+        <pre>
+class MLPBlock(nn.Module):
+    def __init__(self, dim: int, mlp_dim: int):
+        super().__init__()
+        self.norm = nn.RMSNorm(2)
+        self.wk = nn.Linear(2, 3, bias=False)
+        self.act = nn.ReLU()
+        self.wv = nn.Linear(3, 2, bias=False)
+
+    def forward(self, x):
+        scores = self.act(self.wk(self.norm(x)))
+        return x + self.wv(scores)
+        </pre>
+
+
+        <svg id="viz" width="640" height="640"></svg>
+
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script>
+            const svg = d3.select("#viz"),
+                W = +svg.attr("width"),
+                H = +svg.attr("height"),
+                scale = 120,  // px per unit
+                K = 3,
+                domain = 3.0,
+                gridStep = .4,
+                eps = 1e-8,
+                arrowPx = -2;  // length of arrow-head in px
+
+            const colors = { w1: "#03a9f4", w2: "#ef5350", flow: "#888" },
+                darkenFactor = 0.5;
+
+            const toPix = ([x, y]) => [x * scale + W / 2, -y * scale + H / 2],
+                toData = ([X, Y]) => [(X - W / 2) / scale, -(Y - H / 2) / scale];
+
+            function dark(c) {
+                const col = d3.color(c); col.r *= darkenFactor; col.g *= darkenFactor; col.b *= darkenFactor;
+                return col.formatHex();
+            }
+
+            // arrowheads
+            const defs = svg.append("defs");
+            ["w1", "w2", "flow"].forEach(id => {
+                defs.append("marker")
+                    .attr("id", "arrow_" + id)
+                    .attr("viewBox", "0 -4 8 8")
+                    .attr("refX", 0).attr("refY", 0)
+                    .attr("markerWidth", 4).attr("markerHeight", 4)
+                    .attr("orient", "auto")
+                    .append("path")
+                    .attr("d", "M0,-4L8,0L0,4")
+                    .attr("fill", colors[id]);
+            });
+
+            let W1 = [[1, 0], [0, 1], [-0.5, 0.5]];   // keys   (rows)
+            let W2 = [[0.5, 0.1], [0.1, -0.7], [-0.6, 0.4]];   // values (columns)
+
+            const axisX = d3.axisBottom(d3.scaleLinear().domain([-domain, domain]).range([0, W]))
+                .tickSize(-3).ticks(10).tickPadding(4);
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${H / 2})`)
+                .call(axisX);
+            const axisY = d3.axisLeft(d3.scaleLinear().domain([-domain, domain]).range([H, 0]))
+                .tickSize(-3).ticks(10).tickPadding(4);
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(${W / 2},0)`)
+                .call(axisY);
+
+            // input/output field visualization
+            const gridPts = [];
+            for (let x = -domain; x <= domain + 1e-6; x += gridStep)
+                for (let y = -domain; y <= domain + 1e-6; y += gridStep)
+                    gridPts.push({ p: [x, y] });
+
+            svg.append("g").attr("id", "flows");
+
+            function forward([x, y]) {
+                const r = Math.sqrt((x * x + y * y) / 2 + eps);
+                const xn = x / r, yn = y / r;
+                const h = W1.map(([a, b]) => Math.max(0, a / 2 * xn + b / 2 * yn));
+                let out = [0, 0];
+                for (let j = 0; j < K; j++) {
+                    out[0] += W2[j][0] * h[j] / 2;
+                    out[1] += W2[j][1] * h[j] / 2;
+                }
+                return out;
+            }
+
+            function updateFlow() {
+                const sel = svg.select("#flows").selectAll("line").data(gridPts);
+                sel.enter().append("line")
+                    .attr("class", "flow")
+                    .attr("marker-end", "url(#arrow_flow)")
+                    .merge(sel)
+                    .attr("x1", d => toPix(d.p)[0])
+                    .attr("y1", d => toPix(d.p)[1])
+                    .attr("x2", d => {
+                        d.y = forward(d.p);
+                        return toPix([d.y[0] + d.p[0], d.y[1] + d.p[1]])[0];
+                    })
+                    .attr("y2", d => toPix([d.y[0] + d.p[0], d.y[1] + d.p[1]])[1]);
+            }
+            updateFlow();
+
+            // interactive weight vectors
+            let activeIdx = null;   // track which vector is being dragged
+
+            function refreshColors() {
+                ["w1", "w2"].forEach(type => {
+                    svg.selectAll(`.vector.${type}`)
+                        .attr("stroke", (d, i) => (activeIdx === null || i === activeIdx)
+                            ? colors[type]
+                            : dark(colors[type]))
+                        .attr("marker-end", (d, i) => (activeIdx == null || i === activeIdx)
+                            ? `url(#arrow_${type})` : null);
+                });
+            }
+
+            function addVectors(vectors, cls) {
+                const g = svg.append("g")
+                    .selectAll("g." + cls)
+                    .data(vectors)
+                    .enter().append("g")
+                    .attr("class", cls);
+
+                // line
+                g.append("line")
+                    .attr("class", `vector ${cls}`)
+                    .attr("marker-end", `url(#arrow_${cls})`)
+                    .attr("stroke", colors[cls])
+                    .attr("pointer-events", "none");
+
+                // draggable hitbox (invisible)
+                g.append("circle")
+                    .attr("class", "handle")
+                    .attr("r", 15)
+                    .attr("fill", "transparent")
+                    .on("mouseover", (event, d) => { activeIdx = d.index; refreshColors(); })
+                    .on("mouseout", (event, d) => { activeIdx = null; refreshColors(); })
+                    .call(
+                        d3.drag()
+                            .on("drag", (event, d) => {
+                                const [dx, dy] = toData([event.x, event.y]);
+                                d[0] = dx; d[1] = dy;
+                                renderOne(event.subject.index, cls);
+                                updateFlow();
+                            })
+                    );
+
+                // store index on datum
+                g.each(function (d, i) { this.__data__.index = i; });
+
+                renderAll(cls);
+            }
+
+            function shorten(d) {
+                const len = Math.hypot(d[0], d[1]);
+                return len < 1e-6 ? [0, 0] : [d[0] * (1 - arrowPx / (len * scale)),
+                d[1] * (1 - arrowPx / (len * scale))];
+            }
+
+            function renderOne(i, cls) {
+                const vec = (cls === "w1") ? W1[i] : W2[i];
+                const end = shorten(vec);
+                const grp = svg.selectAll(`g.${cls}`).filter((d, idx) => idx === i);
+
+                grp.select("line.vector")
+                    .attr("x1", toPix([0, 0])[0]).attr("y1", toPix([0, 0])[1])
+                    .attr("x2", toPix(end)[0]).attr("y2", toPix(end)[1]);
+
+                grp.select("circle.handle")
+                    .attr("cx", toPix(vec)[0])
+                    .attr("cy", toPix(vec)[1]);
+            }
+
+            function renderAll(cls) {
+                svg.selectAll(`g.${cls}`).each(function (d, i) { renderOne(i, cls); });
+            }
+
+            // create both sets of vectors
+            addVectors(W1, "w1");  // keys (blue)
+            addVectors(W2, "w2");  // values (red)
+            refreshColors();
+
+            // legend
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${W - 180},20)`);
+            [["'keys', rows of wk", "w1"], ["'values', cols of wv", "w2"]].forEach(([label, cls], i) => {
+                legend.append("line")
+                    .attr("x1", 0).attr("y1", i * 18)
+                    .attr("x2", 22).attr("y2", i * 18)
+                    .attr("stroke", colors[cls])
+                    .attr("stroke-width", 3)
+                    .attr("marker-end", `url(#arrow_${cls})`);
+                legend.append("text")
+                    .attr("x", 40).attr("y", i * 18)
+                    .text(label)
+            });
+        </script>
+
+        <p style="color:lightgray;font-size:11px;text-align:center">yes, i did use an llm to generate the code for this.
+            i'm not exactly the kind of person who would know d3.js...</p>
+</body>
+
+</html>

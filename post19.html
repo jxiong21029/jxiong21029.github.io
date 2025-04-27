@@ -71,24 +71,32 @@
 
         <h1>[2025-04-26] MLP visualization (prototype)</h1>
 
+        <p>The MLP block used in transformers is usually some variant of:</p>
 
         <pre>
 class MLPBlock(nn.Module):
     def __init__(self, dim: int, mlp_dim: int):
         super().__init__()
-        self.norm = nn.RMSNorm(2)
-        self.wk = nn.Linear(2, 3, bias=False)
+        self.norm = nn.RMSNorm(dim, elementwise_affine=False)
+        self.wk = nn.Linear(dim, mlp_dim, bias=False)
         self.act = nn.ReLU()
-        self.wv = nn.Linear(3, 2, bias=False)
+        self.wv = nn.Linear(mlp_dim, dim, bias=False)
 
     def forward(self, x):
         scores = self.act(self.wk(self.norm(x)))
-        return x + self.wv(scores)
-        </pre>
+        return x + self.wv(scores)</pre>
 
+        <p>
+            of course, usually with a different activation---I'm using ReLU here for
+            simplicity. Below is a visualization of `MLPBlock(dim=2, mlp_dim=3)`.
+            The colored weight vectors in the visualization are draggable: the blue
+            vectors correspond to the rows of the first linear layer (wk), and the red
+            vectors correspond to the columns of the second linear layer (wv). I call
+            these weight vectors the "key" and "value" vectors, respectively, since they
+            play a similar role as the key and value activations of attention.
+        </p>
 
         <svg id="viz" width="640" height="640"></svg>
-
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <script>
             const svg = d3.select("#viz"),
@@ -153,7 +161,8 @@ class MLPBlock(nn.Module):
             function forward([x, y]) {
                 const r = Math.sqrt((x * x + y * y) / 2 + eps);
                 const xn = x / r, yn = y / r;
-                const h = W1.map(([a, b]) => Math.max(0, a / 2 * xn + b / 2 * yn));
+                const h = W1.map(([a, b]) => Math.max(0, (a / 2 * xn + b / 2 * yn)));
+                // const h = W1.map(([a, b]) => Math.max(0, (a / 2 * xn + b / 2 * yn)) * (a / 2 * xn + b / 2 * yn));
                 let out = [0, 0];
                 for (let j = 0; j < K; j++) {
                     out[0] += W2[j][0] * h[j] / 2;

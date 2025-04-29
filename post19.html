@@ -24,9 +24,15 @@
             line-height: 1.5;
         }
 
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
         #viz {
             display: block;
-            margin: 0 auto;
             background: #222;
         }
 
@@ -87,25 +93,37 @@ class MLPBlock(nn.Module):
         return x + self.wv(scores)</pre>
 
         <p>
-            of course, usually with a different activation---I'm using ReLU here for
-            simplicity. Below is a visualization of `MLPBlock(dim=2, mlp_dim=3)`.
-            The colored weight vectors in the visualization are draggable: the blue
-            vectors correspond to the rows of the first linear layer (wk), and the red
-            vectors correspond to the columns of the second linear layer (wv). I call
-            these weight vectors the "key" and "value" vectors, respectively, since they
-            play a similar role as the key and value activations of attention.
+            Below is a visualization of `MLPBlock(dim=2, mlp_dim=3)`. The colored weight
+            vectors in the visualization are draggable: the blue vectors correspond to
+            the rows of the first linear layer (wk), and the red vectors correspond to
+            the columns of the second linear layer (wv). I call these weight vectors the
+            "key" and "value" vectors, respectively, since they play a similar role as
+            the key and value activations of attention.
         </p>
-
-        <svg id="viz" width="640" height="640"></svg>
+        <div class="container">
+            <svg id="viz" width="640" height="640"></svg>
+            <div>
+                <p>
+                    Activation:
+                    <select id="activation_select">
+                        <option value="relu">ReLU</option>
+                        <option value="relu2">ReLU^2</option>
+                        <option value="silu">SiLU</option>
+                    </select><br>
+                    Norm: <input type="checkbox" id="norm_checkbox" checked /><br>
+                    Residual: <input type="checkbox" id="res_checkbox" checked /><br>
+                </p>
+            </div>
+        </div>
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <script>
             const svg = d3.select("#viz"),
                 W = +svg.attr("width"),
                 H = +svg.attr("height"),
-                scale = 120,  // px per unit
+                scale = 150,  // px per unit
                 K = 3,
-                domain = 3.0,
-                gridStep = .4,
+                domain = 2.2,
+                gridStep = .3,
                 eps = 1e-8,
                 arrowPx = -2;  // length of arrow-head in px
 
@@ -134,8 +152,8 @@ class MLPBlock(nn.Module):
                     .attr("fill", colors[id]);
             });
 
-            let W1 = [[1, 0], [0, 1], [-0.5, 0.5]];   // keys   (rows)
-            let W2 = [[0.5, 0.1], [0.1, -0.7], [-0.6, 0.4]];   // values (columns)
+            let W1 = [[0.5, 0], [0, 0.5], [-0.25, 0.25]];   // keys   (rows)
+            let W2 = [[0.25, 0.05], [0.05, -0.35], [-0.3, 0.2]];   // values (columns)
 
             const axisX = d3.axisBottom(d3.scaleLinear().domain([-domain, domain]).range([0, W]))
                 .tickSize(-3).ticks(10).tickPadding(4);
@@ -158,15 +176,44 @@ class MLPBlock(nn.Module):
 
             svg.append("g").attr("id", "flows");
 
+            let selected_activation = "relu";
+            let norm_enabled = true;
+            let res_enabled = true;
+
+            function activation(x) {
+                if (selected_activation === "relu") {
+                    return Math.max(0, x);
+                }
+                else if (selected_activation === "relu2") {
+                    return Math.max(0, x) * x;
+                }
+                else {
+                    return x / (1 + Math.exp(-x));
+                }
+            }
+
             function forward([x, y]) {
-                const r = Math.sqrt((x * x + y * y) / 2 + eps);
-                const xn = x / r, yn = y / r;
-                const h = W1.map(([a, b]) => Math.max(0, (a / 2 * xn + b / 2 * yn)));
+                let xn, yn;
+                if (norm_enabled) {
+                    const norm = Math.sqrt((x * x + y * y) + eps);
+                    xn = x / norm;
+                    yn = y / norm;
+                } else {
+                    xn = x;
+                    yn = y;
+                }
+                // const xn = x / r, yn = y / r;
+                const h = W1.map(([a, b]) => activation(a * xn + b * yn));
+                // const h = W1.map(([a, b]) => Math.max(0, (a / 2 * xn + b / 2 * yn)));
                 // const h = W1.map(([a, b]) => Math.max(0, (a / 2 * xn + b / 2 * yn)) * (a / 2 * xn + b / 2 * yn));
                 let out = [0, 0];
                 for (let j = 0; j < K; j++) {
-                    out[0] += W2[j][0] * h[j] / 2;
-                    out[1] += W2[j][1] * h[j] / 2;
+                    out[0] += W2[j][0] * h[j];
+                    out[1] += W2[j][1] * h[j];
+                }
+                if (res_enabled) {
+                    out[0] += x;
+                    out[1] += y;
                 }
                 return out;
             }
@@ -181,14 +228,19 @@ class MLPBlock(nn.Module):
                     .attr("y1", d => toPix(d.p)[1])
                     .attr("x2", d => {
                         d.y = forward(d.p);
-                        return toPix([d.y[0] + d.p[0], d.y[1] + d.p[1]])[0];
+                        return toPix([d.y[0], d.y[1]])[0];
                     })
-                    .attr("y2", d => toPix([d.y[0] + d.p[0], d.y[1] + d.p[1]])[1]);
+                    .attr("y2", d => toPix([d.y[0], d.y[1]])[1]);
             }
             updateFlow();
 
+            d3.select("#activation_select").on("change", function () { selected_activation = this.value; updateFlow(); })
+            d3.select("#norm_checkbox").on("change", function () { norm_enabled = this.checked; updateFlow(); })
+            d3.select("#res_checkbox").on("change", function () { res_enabled = this.checked; updateFlow(); })
+
             // interactive weight vectors
             let activeIdx = null;   // track which vector is being dragged
+            let isDragging = false;
 
             function refreshColors() {
                 ["w1", "w2"].forEach(type => {
@@ -220,16 +272,18 @@ class MLPBlock(nn.Module):
                     .attr("class", "handle")
                     .attr("r", 15)
                     .attr("fill", "transparent")
-                    .on("mouseover", (event, d) => { activeIdx = d.index; refreshColors(); })
-                    .on("mouseout", (event, d) => { activeIdx = null; refreshColors(); })
+                    .on("mouseover", (event, d) => { if (!isDragging) { activeIdx = d.index; refreshColors(); } })
+                    .on("mouseout", (event, d) => { if (!isDragging) { activeIdx = null; refreshColors(); } })
                     .call(
                         d3.drag()
+                            .on("start", (event, d) => { isDragging = true; })
                             .on("drag", (event, d) => {
                                 const [dx, dy] = toData([event.x, event.y]);
                                 d[0] = dx; d[1] = dy;
                                 renderOne(event.subject.index, cls);
                                 updateFlow();
                             })
+                            .on("end", (event, d) => { isDragging = false; })
                     );
 
                 // store index on datum
@@ -270,7 +324,7 @@ class MLPBlock(nn.Module):
             // legend
             const legend = svg.append("g")
                 .attr("class", "legend")
-                .attr("transform", `translate(${W - 180},20)`);
+                .attr("transform", `translate(${W - 160},20)`);
             [["'keys', rows of wk", "w1"], ["'values', cols of wv", "w2"]].forEach(([label, cls], i) => {
                 legend.append("line")
                     .attr("x1", 0).attr("y1", i * 18)
@@ -284,8 +338,10 @@ class MLPBlock(nn.Module):
             });
         </script>
 
-        <p style="color:lightgray;font-size:11px;text-align:center">yes, i did use an llm to generate the code for this.
-            i'm not exactly the kind of person who would know d3.js...</p>
+        <p style="color:lightgray;font-size:11px;text-align:center">
+            yes, i did use an llm to generate the majority of the code for this. i'm not
+            exactly the kind of person who would know d3.js...
+        </p>
 </body>
 
 </html>

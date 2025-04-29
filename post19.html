@@ -109,6 +109,7 @@ class MLPBlock(nn.Module):
                         <option value="relu">ReLU</option>
                         <option value="relu2">ReLU^2</option>
                         <option value="silu">SiLU</option>
+                        <option value="none">None</option>
                     </select><br>
                     Norm: <input type="checkbox" id="norm_checkbox" checked /><br>
                     Residual: <input type="checkbox" id="res_checkbox" checked /><br>
@@ -187,8 +188,10 @@ class MLPBlock(nn.Module):
                 else if (selected_activation === "relu2") {
                     return Math.max(0, x) * x;
                 }
-                else {
+                else if (selected_activation == "silu") {
                     return x / (1 + Math.exp(-x));
+                } else {
+                    return x;
                 }
             }
 

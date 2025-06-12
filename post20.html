@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+
+<head>
+    <title>Jerry Xiong</title>
+    <link rel="stylesheet" href="styles.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-size: 16px;
+            font-family: 'Georgia';
+        }
+
+        h1 {
+            font-family: 'Georgia';
+            color: black
+        }
+
+        .slider-container {
+            margin: 10px 0;
+        }
+
+        .label {
+            margin-right: 10px;
+        }
+
+        svg {
+            margin-top: 10px;
+        }
+
+        .grid line {
+            stroke: #888;
+            stroke-opacity: 0.2;
+            shape-rendering: crispEdges;
+        }
+
+        .axis text {
+            pointer-events: none;
+            user-select: none;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            margin-left: 10px;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>[2025-06-12] RoPE update distances visualization</h1>
+
+        <p>Here's a minimal RoPE implementation:</p>
+
+        <pre style="font-size:12px">
+class Rotary(nn.Module):
+    def __init__(self, seq_len: int, head_dim: int, min_freq: float, max_mult: float):
+        super().__init__()
+        self.seq_len = seq_len
+
+        half = head_dim // 2
+        self.freqs = nn.Buffer(min_freq * (max_mult ** torch.linspace(0, 1, half)))
+        theta_1T1d = (torch.arange(seq_len).unsqueeze(-1) * self.freqs).reshape(
+            1, seq_len, 1, half
+        )
+        self.cos_1T1d = nn.Buffer(torch.cos(theta_1T1d), persistent=False)
+        self.sin_1T1d = nn.Buffer(torch.sin(theta_1T1d), persistent=False)
+
+    def forward(self, x_NThd):
+        """forward with known sequence length, using cached rotation matrix"""
+        assert x_NThd.size(1) == self.seq_len
+        x1_NThd, x2_NThd = x_NThd.float().chunk(2, dim=-1)
+        y1_NThd = x1_NThd * self.cos_1T1d - x2_NThd * self.sin_1T1d
+        y2_NThd = x1_NThd * self.sin_1T1d + x2_NThd * self.cos_1T1d
+        return torch.cat([y1_NThd, y2_NThd], dim=-1).type_as(x_NThd)
+        </pre>
+
+        <p>
+            ...and for any particular gradient update applied to the key vector at
+            position 0, here's a plot of the relative magnitude of the change in output
+            for the same input, if it was located at position \(x\) instead:
+        </p>
+
+        <div class="slider-container">
+            <label class="label">min_freq:</label>
+            <input type="range" id="minFreq" min="0.0001" max="100" value="3.14" step="0.0001">
+            <input type="number" id="minFreqVal" value="3.14" step="0.0001">
+        </div>
+        <div class="slider-container">
+            <label class="label">max_mult:</label>
+            <input type="range" id="maxMult" min="1" max="10000" value="100" step="1">
+            <input type="number" id="maxMultVal" value="100" step="1">
+        </div>
+        <div class="slider-container">
+            <label class="label">half:</label>
+            <input type="range" id="H" min="1" max="256" step="1" value="64">
+            <input type="number" id="HVal" value="64" step="1">
+        </div>
+
+        <svg width="800" height="400"></svg>
+
+        <script>
+            const svg = d3.select("svg");
+            const width = +svg.attr("width");
+            const height = +svg.attr("height");
+            const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+            const innerWidth = width - margin.left - margin.right;
+            const innerHeight = height - margin.top - margin.bottom;
+
+            const xScale = d3.scaleLinear().domain([-1, 1]).range([0, innerWidth]);
+            const yScale = d3.scaleLinear().domain([-1, 1]).range([innerHeight, 0]);
+
+            const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Add gridlines
+            const xGrid = d3.axisBottom(xScale)
+                .tickSize(-innerHeight)
+                .tickFormat("");
+
+            const yGrid = d3.axisLeft(yScale)
+                .tickSize(-innerWidth)
+                .tickFormat("");
+
+            g.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(xGrid);
+
+            g.append("g")
+                .attr("class", "grid")
+                .call(yGrid);
+
+            const xAxis = d3.axisBottom(xScale).ticks(10);
+            const yAxis = d3.axisLeft(yScale);
+
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(xAxis);
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(yAxis);
+
+            const linePath = g.append("path")
+                .attr("fill", "none")
+                .attr("stroke", "black")
+                .attr("stroke-width", 2);
+
+            function linspace(start, end, num) {
+                const arr = [];
+                for (let i = 0; i < num; i++) {
+                    arr.push(start + (end - start) * (i / (num - 1)));
+                }
+                return arr;
+            }
+
+            function computeAlignment(minFreq, maxMult, H) {
+                // const thetaVals = linspace(0, 2 * Math.PI, 200);
+                const thetaVals = linspace(-1, 1, 301);
+                const x = Array(H).fill(0).flatMap(() => [1, 0]);
+                const ws = linspace(0, 1, H).map(i => minFreq * Math.pow(maxMult, i));
+
+                return thetaVals.map(theta => {
+                    const y = ws.flatMap(w => [Math.cos(w * theta), Math.sin(w * theta)]);
+                    const dot = d3.sum(d3.range(2 * H).map(i => x[i] * y[i]));
+                    const normY = Math.sqrt(d3.sum(y.map(v => v * v)));
+                    const alignment = dot / (Math.sqrt(H) * normY);
+                    return { theta, alignment };
+                });
+            }
+
+            function updatePlot() {
+                const minFreq = parseFloat(document.getElementById("minFreq").value);
+                const maxMult = parseFloat(document.getElementById("maxMult").value);
+
+                const H = parseInt(document.getElementById("H").value);
+
+                document.getElementById("minFreqVal").value = minFreq;
+                document.getElementById("maxMultVal").value = maxMult;
+                document.getElementById("HVal").value = H;
+
+                const data = computeAlignment(minFreq, maxMult, H);
+
+                const lineGen = d3.line()
+                    .x(d => xScale(d.theta))
+                    .y(d => yScale(d.alignment));
+
+                linePath.datum(data).attr("d", lineGen);
+            }
+
+            function syncInputs(idRange, idInput, parseFn = parseFloat) {
+                document.getElementById(idRange).addEventListener("input", () => {
+                    document.getElementById(idInput).value = document.getElementById(idRange).value;
+                    updatePlot();
+                });
+
+                const inputElem = document.getElementById(idInput);
+
+                inputElem.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        document.getElementById(idRange).value = inputElem.value;
+                        updatePlot();
+                    }
+                });
+
+                inputElem.addEventListener("blur", () => {
+                    document.getElementById(idRange).value = inputElem.value;
+                    updatePlot();
+                });
+
+                inputElem.addEventListener("change", () => {
+                    document.getElementById(idRange).value = inputElem.value;
+                    updatePlot();
+                });
+            }
+
+            syncInputs("minFreq", "minFreqVal", parseFloat);
+            syncInputs("maxMult", "maxMultVal", parseFloat);
+            syncInputs("H", "HVal", parseInt);
+
+            updatePlot();
+        </script>
+    </div>
+</body>
+
+</html>

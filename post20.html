@@ -58,53 +58,85 @@
     <div class="content" height="90em">
         <p><a href="/">[back to home]</a></p>
 
-        <h1>[2025-06-12] RoPE update distances visualization</h1>
+        <h1>[2025-06-12] RoPE visualization</h1>
 
-        <p>Here's a minimal RoPE implementation:</p>
+        <p style="color:gray">Edit (2025-06-25): Elaborated more.</p>
+
+        <p>Here's an implementation of RoPE:</p>
 
         <pre style="font-size:12px">
 class Rotary(nn.Module):
     def __init__(self, seq_len: int, head_dim: int, min_freq: float, max_mult: float):
+        """
+        Args:
+            head_dim: the dimensionality of the attention head, equal to n_freqs * 2
+            min_freq: the smallest angular frequency of the rotation
+            max_mult: the ratio of the largest to the smallest angular frequencies
+        
+        Dimension key:
+            N: batch size
+            T: sequence length
+            H: num attention heads
+            D: head_dim
+            F: n_freqs == head_dim // 2
+        """
         super().__init__()
-        self.seq_len = seq_len
 
-        half = head_dim // 2
-        self.freqs = nn.Buffer(min_freq * (max_mult ** torch.linspace(0, 1, half)))
-        theta_1T1d = (torch.arange(seq_len).unsqueeze(-1) * self.freqs).reshape(
-            1, seq_len, 1, half
-        )
-        self.cos_1T1d = nn.Buffer(torch.cos(theta_1T1d), persistent=False)
-        self.sin_1T1d = nn.Buffer(torch.sin(theta_1T1d), persistent=False)
+        n_freqs = head_dim // 2
+        self.freqs_F = nn.Buffer(min_freq * (max_mult ** torch.linspace(0, 1, n_freqs)))
+        theta_T1F = torch.arange(seq_len)[:, None, None] * self.freqs_F
+        self.cos_T1F = nn.Buffer(torch.cos(theta_T1F))
+        self.sin_T1F = nn.Buffer(torch.sin(theta_T1F))
 
-    def forward(self, x_NThd):
-        """forward with known sequence length, using cached rotation matrix"""
-        assert x_NThd.size(1) == self.seq_len
-        x1_NThd, x2_NThd = x_NThd.float().chunk(2, dim=-1)
-        y1_NThd = x1_NThd * self.cos_1T1d - x2_NThd * self.sin_1T1d
-        y2_NThd = x1_NThd * self.sin_1T1d + x2_NThd * self.cos_1T1d
-        return torch.cat([y1_NThd, y2_NThd], dim=-1).type_as(x_NThd)
+    def forward(self, input_NTHD: torch.Tensor):
+        """forward with known sequence length, using cached rotation matrices"""
+        x_NTHF, y_NTHF = input_NTHD.float().chunk(2, dim=-1)
+        x_out_NTHF = x_NTHF * self.cos_T1F - y_NTHF * self.sin_T1F
+        y_out_NTHF = x_NTHF * self.sin_T1F + y_NTHF * self.cos_T1F
+        output_NTHD = torch.cat([x_out_NTHF, y_out_NTHF], dim=-1).type_as(input_NTHD)
+        return output_NTHD
         </pre>
 
         <p>
-            ...and for any particular gradient update applied to the key vector at
-            position 0, here's a plot of the relative magnitude of the change in output
-            for the same input, if it was located at position \(x\) instead:
+            For language modeling, typical values for min_freq and max_mult would be
+            1e-4 and 1e4, respectively. (Actually, max_mult would be slightly lower,
+            since typically the upper bound of the exponents would be exclusive.) For
+            applications outside of language, I tend to normalize positional coordinates
+            to the interval [-1, 1], in which case a reasonable default min_freq would
+            be 0.1 or so.
+        </p>
+
+        <p>
+            Below, I'm plotting the cosine alignment of an unrotated query vector with
+            the rotated version of itself over different positions. In general,
+            attention maps will be linear combinations of the (softmax of) the plotted
+            function. This is, in a sense, the "most specific" a query for a specific
+            key can be, if you bound the norm of the query. Increasing min_freq results
+            in more specific attention maps, which can improve expressivity, but also
+            results on a weaker prior in terms of the smoothness of the output over
+            small positional translations of the keys.
+        </p>
+
+        <p>
+            This plot also equivalently shows, given the gradient update that gets
+            applied to a key at position zero, the relative change in the attention
+            score for the same query and key, across different positions of the key.
         </p>
 
         <div class="slider-container">
             <label class="label">min_freq:</label>
-            <input type="range" id="minFreq" min="0.0001" max="100" value="3.14" step="0.0001">
-            <input type="number" id="minFreqVal" value="3.14" step="0.0001">
+            <input type="range" id="minFreq" min="0.0001" max="100" value="0.1" step="0.0001">
+            <input type="number" id="minFreqVal" value="0.1" step="0.0001">
         </div>
         <div class="slider-container">
             <label class="label">max_mult:</label>
-            <input type="range" id="maxMult" min="1" max="10000" value="100" step="1">
+            <input type="range" id="maxMult" min="1" max="10000" value="1000" step="1">
             <input type="number" id="maxMultVal" value="100" step="1">
         </div>
         <div class="slider-container">
-            <label class="label">half:</label>
-            <input type="range" id="H" min="1" max="4096" step="1" value="64">
-            <input type="number" id="HVal" value="64" step="1">
+            <label class="label">n_freqs:</label>
+            <input type="range" id="nFreqs" min="1" max="4096" step="1" value="64">
+            <input type="number" id="nFreqsVal" value="64" step="1">
         </div>
 
         <svg width="800" height="400"></svg>
@@ -165,17 +197,17 @@ class Rotary(nn.Module):
                 return arr;
             }
 
-            function computeAlignment(minFreq, maxMult, H) {
+            function computeAlignment(minFreq, maxMult, nFreqs) {
                 // const thetaVals = linspace(0, 2 * Math.PI, 200);
                 const thetaVals = linspace(-1, 1, 301);
-                const x = Array(H).fill(0).flatMap(() => [1, 0]);
-                const ws = linspace(0, 1, H).map(i => minFreq * Math.pow(maxMult, i));
+                const x = Array(nFreqs).fill(0).flatMap(() => [1, 0]);
+                const ws = linspace(0, 1, nFreqs).map(i => minFreq * Math.pow(maxMult, i));
 
                 return thetaVals.map(theta => {
                     const y = ws.flatMap(w => [Math.cos(w * theta), Math.sin(w * theta)]);
-                    const dot = d3.sum(d3.range(2 * H).map(i => x[i] * y[i]));
+                    const dot = d3.sum(d3.range(2 * nFreqs).map(i => x[i] * y[i]));
                     const normY = Math.sqrt(d3.sum(y.map(v => v * v)));
-                    const alignment = dot / (Math.sqrt(H) * normY);
+                    const alignment = dot / (Math.sqrt(nFreqs) * normY);
                     return { theta, alignment };
                 });
             }
@@ -184,13 +216,13 @@ class Rotary(nn.Module):
                 const minFreq = parseFloat(document.getElementById("minFreq").value);
                 const maxMult = parseFloat(document.getElementById("maxMult").value);
 
-                const H = parseInt(document.getElementById("H").value);
+                const nFreqs = parseInt(document.getElementById("nFreqs").value);
 
                 document.getElementById("minFreqVal").value = minFreq;
                 document.getElementById("maxMultVal").value = maxMult;
-                document.getElementById("HVal").value = H;
+                document.getElementById("nFreqsVal").value = nFreqs;
 
-                const data = computeAlignment(minFreq, maxMult, H);
+                const data = computeAlignment(minFreq, maxMult, nFreqs);
 
                 const lineGen = d3.line()
                     .x(d => xScale(d.theta))
@@ -227,7 +259,7 @@ class Rotary(nn.Module):
 
             syncInputs("minFreq", "minFreqVal", parseFloat);
             syncInputs("maxMult", "maxMultVal", parseFloat);
-            syncInputs("H", "HVal", parseInt);
+            syncInputs("nFreqs", "nFreqsVal", parseInt);
 
             updatePlot();
         </script>

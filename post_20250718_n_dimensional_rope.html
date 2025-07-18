@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>N-dimensional Rotary Positional Embeddings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .content {
+            margin: auto;
+            max-width: 70em;
+            background-color: white;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        body {
+            font-size: 16px;
+            line-height: 1.5;
+            background-color: #EEEEEE;
+        }
+
+        p,
+        h1,
+        h3,
+        li {
+            font-family: sans-serif;
+        }
+
+        h1 {
+            margin-bottom: 0px;
+        }
+
+        h2 {
+            font-family: Verdana;
+            font-size: 22px;
+        }
+
+        a {
+            cursor: pointer
+        }
+
+        label {
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            font-size: 0.8rem;
+            min-width: 150px;
+            max-width: 200px;
+            margin-bottom: 1rem;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .grid line {
+            stroke: #888;
+            stroke-opacity: 0.2;
+            shape-rendering: crispEdges;
+        }
+
+        .axis text {
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .figure {
+            display: flex;
+        }
+
+        .figcontrols {
+            margin-right: 2rem;
+        }
+
+        .checkbox_label {
+            margin-top: 1rem;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .figcaption {
+            color: gray;
+            font-family: sans-serif;
+            font-size: 16px
+        }
+
+        .aside {
+            color: gray;
+            margin-left: 42px;
+            margin-right: 42px;
+        }
+
+        .note {
+            color: gray
+        }
+
+        .shazeer {
+            margin-left: 2ch;
+        }
+
+        .code {
+            font-size: 12px;
+            line-height: 16px;
+            min-width: 100ch;
+            max-width: 100ch;
+            margin-right: 2rem
+        }
+
+        #rope2d {
+            border: 1px solid #ccc;
+            image-rendering: pixelated;
+            margin-right: 1rem;
+            width: 400px;
+            height: 400px;
+        }
+
+        #rope1d {
+            min-width: 400px;
+            min-height: 300px;
+            margin-right: 2rem;
+        }
+
+        #rope1dspeed {
+            color: gray;
+            font-family: monospace;
+            font-size: 14px;
+            margin-top: 1.5rem;
+        }
+
+        #rope2d_components {
+            border: 1px solid #ccc;
+            image-rendering: pixelated;
+            margin-right: 1rem;
+            width: 200px;
+            height: 200px;
+        }
+
+        #author {
+            margin-top: 0px;
+            color: gray;
+            font-family: sans-serif;
+            font-size: 14px
+        }
+
+        th {
+            padding-left: 16px;
+        }
+
+        td {
+            font-family: monospace;
+            font-size: 12px;
+            padding-left: 16px;
+        }
+
+        .bigcol {
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tooltip" class="tooltip"></div>
+
+    <div class="content" height="90em">
+        <p><a href="/">[back to home]</a></p>
+
+        <h1>On N-dimensional Rotary Positional Embeddings</h1>
+        <p id="author">July 16th, 2025 · Jerry Xiong
+        </p>
+
+        <div class="figure">
+            <canvas id="rope2d"></canvas>
+            <div class="figcontrols">
+                <label>resolution
+                    <input id="N_range" type="range" min="9" max="99" step="2" value="51" />
+                    <input id="N" type="number" min="9" max="99" step="2" value="51" />
+                </label>
+                <label>min_freq
+                    <input id="min_freq_range" type="range" min="0.1" max="50.0" step="0.01" value="1" />
+                    <input id="min_freq" type="number" min="0.1" max="50.0" step="0.01" value="1" />
+                </label>
+                <label>max_freq
+                    <input id="max_freq_range" type="range" min="1.0" max="1000" step="0.1" value="64" />
+                    <input id="max_freq" type="number" min="1.0" max="1000" step="0.1" value="64" />
+                </label>
+                <label>n_freqs
+                    <input id="n_freqs_range" type="range" min="1" max="256" step="1" value="128" />
+                    <input id="n_freqs" type="number" min="1" max="256" step="1" value="128" />
+                </label>
+                <label>direction_spacing
+                    <input id="phi_spacing_range" type="range" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
+                    <input id="phi_spacing" type="number" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
+                </label>
+                <label class="checkbox_label">
+                    <input id="axial_directions" type="checkbox" /> axial
+                </label>
+            </div>
+
+            <p class="figcaption">
+                <em>Fig. 1</em>. Pre-softmax attention scores between a fixed query and
+                rotations of that query over varying positions. <br><br>
+                Typical axial RoPE rotates half of each head's components based on
+                distance along the x-axis, and the other half based on distance along
+                the y-axis, which results in striped artifacts and poorly concentrated
+                attention maps. Queries are unable to attend to tokens at specific
+                positions without also attending to tokens with similar keys in
+                the same row or column. <br><br>
+                Instead, by uniformly varying the directions along which distance is
+                computed, RoPE induces attention maps that can be arbitrarily
+                concentrated, with scores that decrease smoothly with increasing L2
+                distance.
+            </p>
+        </div>
+
+        <br>
+        <h2>RoPE in one dimension</h2>
+
+        <p>
+            One of the simplest ways of encoding relative positional information in
+            attention is to add a scalar to each attention logit depending on the
+            distance between the corresponding query and key (e.g. T5, ALiBi).
+        </p>
+
+        <p>
+            However, this makes it difficult for a query to attend to any specific (key,
+            relative position) pair: in particular, the query must have a component pointing
+            in the direction of the desired key, but this increases the attention
+            scores from that query to all tokens with that key, <em>regardless</em> of
+            their position.
+        </p>
+
+        <!-- <p class="aside">
+            Intuitively, being able to attend to specific (key, position) pairs is
+            desirable for domains like language, where the relationship between two
+            tokens can depend on their positions relative to each other.
+        </p> -->
+
+        <p>
+            Rotary positional embeddings (RoPE) are an elegant solution to this problem.
+            Essentially, the query and key vectors for every token are rotated in the
+            same direction, with an angle of rotation proportional to the token's (1-d
+            coordinate) position.
+        </p>
+
+        <p class="aside">
+            To be specific, each attention head has its \(D\) channel dimensions divided
+            into \(D / 2\) dimension pairs. For a given query or key input vector, \(x
+            \in \mathbb R^D\), located at a position, \(t\), the two components of the
+            vector corresponding to the \(i\)th dimension pair, \((x_{2i + 1}, x_{2i +
+            2})\), are rotated about the origin by an angle \(\omega_i \cdot t\), where
+            \(\omega_i\) is the angular frequency corresponding to \(i\):
+            \[
+            \text{RoPE1d} (x, t) =
+            {\small
+            \begin{pmatrix}
+            \cos (\omega_1 t) & -\sin (\omega_1 t) & 0 & 0 & \cdots & 0 & 0 \\
+            \sin (\omega_1 t) & \cos (\omega_1 t) & 0 & 0 & \cdots & 0 & 0 \\
+            0 & 0 & \cos (\omega_2 t) & -\sin (\omega_2 t) & \cdots & 0 & 0 \\
+            0 & 0 & \sin (\omega_2 t) & \cos (\omega_2 t) & \cdots & 0 & 0 \\
+            \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+            0 & 0 & 0 & 0 & \cdots & \cos (\omega_{D / 2} t) & -\sin (\omega_{D / 2} t) \\
+            0 & 0 & 0 & 0 & \cdots & \sin (\omega_{D / 2} t) & \cos (\omega_{D / 2} t) \\
+            \end{pmatrix}
+            }
+            x.
+            \]
+            The composition of independent rotations on orthogonal 2d planes is itself
+            just a higher-dimensional rotation, so (for randomly sampled inputs), RoPE
+            is essentially rotating the vector as a whole at a (tangential) velocity
+            satisfying
+            \[ \mathbb E_x\left[ \left\| \frac{\partial}{\partial t}
+            \text{RoPE}(x, t) \right\|_{\text{RMS}}^2 \right] = \frac{1}{D}
+            \sum_{i=1}^{D / 2} \omega_i^2.\]
+
+            Typically, a range of log-spaced frequency magnitudes are selected, where
+            the \(i\)th frequency magnitude is \[\omega_i = \omega_\text{min} \cdot
+            (\omega_\text{max} / \omega_\text{min}) ^{i / (D/2 - 1)}.\]
+
+            Intuitively, including a range of frequencies (rather than
+            just setting all frequencies to the RMS frequency) enables queries which are
+            more or less specific about position, by using relatively larger components
+            in the higher or lower frequencies, respectively. For example, restricting a
+            query vector to a prefix of an attention head's dimensions effectively
+            reduces the rotation's maximum frequency.
+        </p>
+
+        <p>
+            By applying an equivalent rotation to both the queries and the keys, RoPE
+            encodes only relative positional information (rotating two vectors by the
+            same angle doesn't affect their inner product). In theory, attending to a
+            specific (key, relative position) pair is possible by simply setting the
+            query to a large vector in the direction of the desired key vector rotated
+            by the corresponding angle.
+        </p>
+
+        <div class="figure">
+            <svg id="rope1d" width=400 height=300></svg>
+            <div class="figcontrols">
+                <label>
+                    <span>min_freq (\(\omega_\text{min}\))</span>
+                    <input type="range" id="minFreq" min="0.0001" max="10" value="0.1" step="0.0001">
+                    <input type="number" id="minFreqVal" value="0.1" step="0.0001">
+                </label>
+                <label>
+                    <span>max_freq (\(\omega_\text{max}\))</span>
+                    <input type="range" id="maxFreq" min="1" max="1000" value="100" step="1">
+                    <input type="number" id="maxFreqVal" value="100" step="1">
+
+                </label>
+                <label>
+                    <span>n_freqs (\(D / 2\))</span>
+                    <input type="range" id="nFreqs" min="1" max="128" step="1" value="64">
+                    <input type="number" id="nFreqsVal" value="64" step="1">
+                </label>
+                <!-- <p id="rope1dspeed">
+                    rotation speed:
+                </p> -->
+            </div>
+
+            <p class="figcaption">
+                <em>Fig 2</em>. Pre-softmax attention scores between a fixed query and
+                the 1d-RoPE-rotated version of itself, over varying positions.
+                <br><br>
+                Note that this plot is designed for positions normalized to [-1.0, 1.0].
+                In language modeling, positions are usually defined as just the integer
+                token index, in which case a commonly used set of parameters is
+                approximately equivalent to \(\omega_\text{min}\) = 0.0001 and
+                \(\omega_\text{max}\) = 1.0.
+            </p>
+        </div>
+
+        <!-- <p>
+            The overall angular speed of the rotation presents a tradeoff between
+            expressivity and smoothness. A slower speed of rotation enforces the prior
+            that attention scores should change slowly as the relative position changes,
+            but can also make it more difficult for queries to target specific positions
+            if necessary, especially if QK-normalization is applied. Though, the
+            effective rotation speed can be modulated somewhat using queries that
+            restrict themselves to subsets of the full attention head basis.
+        </p> -->
+
+        <h2>2-dimensional extensions</h2>
+
+        <p>
+            The simplest extension of RoPE to 2 dimensions, as well as the most common
+            form of rotary positional embeddings used in vision transformer
+            implementations today, is called axial RoPE. Essentially, axial RoPE just
+            applies 1d RoPE twice: rotating the first \(D/2\) dimensions of each query
+            and key vector according to the tokens' x-positions, and the remaining
+            \(D/2\) dimensions according to the tokens' y-positions.
+        </p>
+
+        <p>
+            Similar to 1d RoPE, 2d axial RoPE also encodes purely relative positional
+            information. However, unlike 1d RoPE, 2d axial RoPE does not enable
+            attending solely to specific (key, relative position) pairs. In particular,
+            the first half of a query (which rotates according to x-position)
+            contributes the same amount to the attention score for a key regardless of
+            the key's y-position, and similarly, the second half of a query contributes
+            the same amount regardless of the key's x-position. Attending to a token
+            means necessarily attending to any tokens with similar keys located in the
+            same row or column, with a pre-softmax attention score at least about half
+            as large.
+        </p>
+
+        <p>
+            The main insight is that, rather than rotating any particular dimension pair
+            based on only x-position or based on only y-position, the rotations can
+            instead be based on the tokens' positions measured along arbitrary 2d
+            directions (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>).
+        </p>
+        <!-- <p class="aside">I've noticed that a good proportion of the works which
+            cite Heo et al. are simply using axial RoPE anyway.</p> -->
+
+        <p>
+            In other words, during initialization, unit directions
+            \(\{\mathbf{u}_i\}_{i=1}^{D/2}, \mathbf{u}_i \in \mathbb{R}^2,
+            \|\mathbf{u}_i\|_2 = 1\) are selected for each of the \(D/2\) dimension
+            pairs. Then, during inference, to determine the angle of rotation for the
+            \(i\)th pair (which for 1d RoPE, was simply the scalar frequency
+            \(\omega_i\) times the token's 1d coordinate position), the token's 2d
+            position is projected to \(\mathbf{u}_i\) to obtain a scalar inner product,
+            before being multiplied by \(\omega_i\) as before.
+        </p>
+
+        <p class="aside">
+            To be precise, the general RoPE operation in \(N\) dimensions can be written
+            as
+            \[
+            \text{RoPE}_{\{q, k\}} (x, \mathbf{t}) =
+            {\scriptsize
+            \begin{pmatrix}
+            \cos (\omega_1 \langle \mathbf{u}_1, \mathbf{t} \rangle) & -\sin (\omega_1
+            \langle \mathbf{u}_1, \mathbf{t} \rangle) & \cdots & 0 & 0 \\
+            \sin (\omega_1 \langle \mathbf{u}_1, \mathbf{t} \rangle) & \cos (\omega_1
+            \langle \mathbf{u}_1, \mathbf{t} \rangle) & \cdots & 0 & 0 \\
+            \vdots & \vdots & \ddots & \vdots & \vdots \\
+            0 & 0 & \cdots & \cos (\omega_{D / 2} \langle \mathbf{u}_{D / 2}, \mathbf{t}
+            \rangle) & -\sin (\omega_{D / 2} \langle \mathbf{u}_{D / 2}, \mathbf{t}
+            \rangle) \\
+            0 & 0 & \cdots & \sin (\omega_{D / 2} \langle \mathbf{u}_{D / 2}, \mathbf{t}
+            \rangle) & \cos (\omega_{D / 2} \langle \mathbf{u}_{D / 2}, \mathbf{t}
+            \rangle) \\
+            \end{pmatrix}
+            }
+            W_{\{q, k\}} x.
+            \]
+            This includes axial RoPE, which is the special case when the directions
+            \(\{\mathbf{u}_i\}_{i=1}^{D/2}\) are in the standard basis.
+        </p>
+
+        <p>
+            It turns out that, by spacing out the directions
+            \(\{\mathbf{u}_i\}_{i=1}^{D / 2}\) uniformly on the unit circle, while
+            keeping the same log-spaced frequency magnitudes
+            \(\{\omega_i\}_{i=1}^{D/2}\) as 1d RoPE, the periodic oscillations of each
+            pair approximately cancel each other out at long distances, producing a
+            concentrated attention map.
+        </p>
+
+        <div class="figure">
+            <canvas id="rope2d_components"></canvas>
+            <div class="figcontrols">
+                <p class="figcaption">
+                    <em>Fig 3.</em> Pre-softmax attention scores when evaluating the
+                    inner products on a prefix of the dimension pairs. Uniformly spaced
+                    directions.
+                </p>
+                <label># components
+                    <input id="n_components_range" type="range" min="1" max="256" step="1" value="32" />
+                    <input id="n_components" type="number" min="1" max="256" step="1" value="32" />
+                </label>
+            </div>
+        </div>
+
+        <h2>Selecting frequency directions</h2>
+        <p>
+            MixedRoPE (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>)
+            initializes \(\{\mathbf{u}_i\}_{i=1}^{D / 2}\) by sampling uniformly random
+            vectors from the unit circle, then treating the frequency vectors
+            \(\mathbf{f}_i = \omega_i \mathbf{u}_i\) as learnable parameters. However,
+            it's unclear a priori whether learning these frequency vectors as parameters
+            is actually beneficial.
+        </p>
+        <p class="aside">
+            Intuitively, typical neural network parameters, e.g. the weights of a linear
+            layer, have the property that a small gradient step on some given
+            input to the layer, that changes the layer's output in a certain way, will
+            change the layer's outputs for other inputs in a similar way, with the size
+            of that change proportional to how similar those inputs are to the given
+            input. Small changes in the frequency vectors of RoPE have no such effect,
+            which perhaps makes them less amenable to optimization via gradient.
+        </p>
+
+        <p>
+            If these frequency vectors are kept frozen instead, then we would like to
+            initialize them deterministically, while still distributing them uniformly
+            in terms of both direction and magnitude. In two dimensions, a simple
+            approach is to arrange the frequency vectors for each head in order of
+            increasing magnitude, then rotating the \(i\)th vector to an angle of
+            \(i\cdot \Delta\phi\) for some spacing \(\Delta\phi\). As long as
+            \(\Delta\phi\) isn't too small or <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
+                approximated</a> as a rational multiple of \(2\pi\), the resulting
+            vectors will be distributed approximately uniformly. A good option is
+            \(\Delta\phi = 2\pi / \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is
+            the golden ratio (kudos to Kevin Yin @ad8e for the suggestion).
+        </p>
+
+        <p>
+            For embedding positions in \(N > 2\) dimensions, one option that works well
+            and is fairly simple to implement is to sample from \(U(0, 1)\)
+            quasi-randomly via Kronecker sequences (the fractional parts of multiples of
+            prime square roots), mapping them to Gaussian samples using the inverse CDF,
+            and then normalizing to length one, e.g. see the implementation <a href="#ropend_impl">here</a>.
+        </p>
+        <!-- <div class="figure">
+            <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
+    # Quasi-random samples from the uniform distribution using Kronecker sequences
+    primes = [2, 3, 5, 7, 11, 13, 17, 19]
+    x = 23
+    while len(primes) < dim:
+        if all(x % p != 0 for p in primes):
+            primes.append(x)
+        x += 2
+    z = (
+        torch.arange(1, n + 1).reshape(n, 1)
+        * torch.sqrt(torch.tensor(primes[:dim], dtype=torch.float64))
+    ).fmod(1.0)
+
+    # Map samples from U[0, 1] to N(0, 1)
+    z = math.sqrt(2) * torch.erfinv(2 * z - 1)
+
+    directions = z / z.norm(dim=1, keepdim=True)
+    return directions.float()</code></pre>
+        </div> -->
+
+        <h2>ViT experiments</h2>
+
+        <h3>Classification on CIFAR10</h3>
+
+        <p>
+            I trained some small (7M param) vision transformer baselines with 4x4 patch
+            size and global average pooling, comparing:
+        </p>
+        <ul>
+            <li>
+                Learned absolute positional embeddings (APE), the approach used in the
+                original vision transformer paper
+                (<a href="https://arxiv.org/abs/2010.11929">Dosovitskiy et al. 2020</a>).
+            </li>
+            <li>
+                Fixed sin/cos positional embeddings (SinCos), an absolute positional
+                embedding approach suggested in
+                <a href="https://arxiv.org/abs/2205.01580">Beyer et al. 2022</a>.
+                Similar to the positional embedding from the original transformer paper,
+                but with one half derived from the x-position and the other half derived
+                from y.
+            </li>
+            <li>
+                Axial RoPE.
+            </li>
+            <li>
+                MixedRoPE
+                (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>) with
+                learned, randomly initalized frequencies. The official implementation
+                uses (\(\omega_\text{min}\) = 0.65, \(\omega_\text{max}\) = 6.5).
+                <span class="note">
+                    To be specific, they use frequencies from 0.1 to 1.0 while working
+                    with integer row/column positions ranging from 0 to 13, whereas here
+                    the frequencies are expressed w.r.t positions normalized to [-1.0,
+                    1.0].
+                </span>
+            </li>
+            <li>
+                RoPE with frozen, uniformly spaced directions (UniformRoPE), including
+                random and determinstic initializations.
+            </li>
+        </ul>
+        <p>
+            Below, I'm reporting test set NLL and accuracy (mean ± std over 2 seeds).
+            See hyperparameters <a href="#hyperparams">here</a>.
+        </p>
+
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Frozen</th>
+                <th>\(\omega_\text{min}\)</th>
+                <th>\(\omega_\text{max}\)</th>
+                <th>Test NLL (↓)</th>
+                <th>Test Accuracy (%) (↑)</th>
+            </tr>
+            <tr>
+                <td>APE</td>
+                <td class="bigcol">✘</td>
+                <td>N/A</td>
+                <td>N/A</td>
+                <td>0.4287 ± 0.0031</td>
+                <td>89.70 ± 0.03</td>
+            </tr>
+            <tr>
+                <td>SinCos</td>
+                <td class="bigcol">✓</td>
+                <td>1.0</td>
+                <td>100.0</td>
+                <td>0.4144 ± 0.0124</td>
+                <td>89.93 ± 0.45</td>
+            </tr>
+            <tr>
+                <td>AxialRoPE</td>
+                <td class="bigcol">✓</td>
+                <td>1.0</td>
+                <td>100.0</td>
+                <td>0.3694 ± 0.0009</td>
+                <td>91.37 ± 0.05</td>
+            </tr>
+            <tr>
+                <td>MixedRoPE (Heo et al. 2024)</td>
+                <td class="bigcol">✘</td>
+                <td>0.65</td>
+                <td>6.5</td>
+                <td>0.3550 ± 0.0072</td>
+                <td>91.63 ± 0.32</td>
+            </tr>
+            <tr>
+                <td>MixedRoPE, adjusted freqs</td>
+                <td class="bigcol">✘</td>
+                <td>1.0</td>
+                <td>100.0</td>
+                <td>0.3394 ± 0.0015</td>
+                <td>92.43 ± 0.07</td>
+            </tr>
+            <tr>
+                <td>UniformRoPE, random init</td>
+                <td class="bigcol">✓</td>
+                <td>1.0</td>
+                <td>100.0</td>
+                <td>0.3382 ± 0.0005</td>
+                <td>92.25 ± 0.01</td>
+            </tr>
+            <tr>
+                <td>UniformRoPE, deterministic</td>
+                <td class="bigcol">✓</td>
+                <td>1.0</td>
+                <td>100.0</td>
+                <td>0.3292 ± 0.0023</td>
+                <td>92.43 ± 0.05</td>
+            </tr>
+        </table>
+
+        <p>
+            Axial RoPE and both absolute positional embedding schemes performed
+            poorly. MixedRoPE underperformed when using the frequencies from
+            the original paper, but performed only slightly worse than UniformRoPE
+            after adjusting the frequency range. UniformRoPE with deterministic
+            initialization performed best.
+        </p>
+
+        <h3 class="note">Classification on ImageNet-1K # TODO</h3>
+
+        <h2>Acknowledgements</h2>
+        <p>
+            Kevin Yin @ad8e for suggesting uniform rotations by \(\pi (1 - \sqrt{5})\).
+            <!-- <a href="https://cgdct.moe/">Stephen Huan</a> for contributing NOTHING -->
+        </p>
+
+        <h2>Reference implementations</h2>
+        <h3>Uniform 2d RoPE (PyTorch)</h3>
+
+        <div class="figure">
+            <pre class="code"><code class="language-python">class UniformRoPE2d(nn.Module):
+    def __init__(
+        self,
+        image_size: tuple[int, int],
+        n_heads: int,
+        head_dim: int,
+        min_freq: float,
+        max_freq: float,
+        direction_spacing: float = math.pi * (math.sqrt(5) - 1),
+    ):
+        super().__init__()
+        n_freqs = head_dim // 2
+        omega_F = min_freq * (max_freq / min_freq) ** torch.linspace(0, 1, n_freqs)
+        phi_hF = (
+            torch.arange(n_heads * n_freqs).reshape(n_heads, n_freqs)
+            * direction_spacing
+        )
+        directions_hF2 = torch.stack((torch.cos(phi_hF), torch.sin(phi_hF)), dim=-1)
+        freqs_hF2 = omega_F.unsqueeze(-1) * directions_hF2
+
+        H, W = image_size
+        xx_HW = torch.linspace(-1, 1, W).reshape(1, W).expand(H, W)
+        yy_HW = torch.linspace(-1, 1, H).reshape(H, 1).expand(H, W)
+        positions_HW112 = torch.stack((xx_HW, yy_HW), dim=-1).reshape(H, W, 1, 1, 2)
+
+        theta_HWhF = (freqs_hF2 * positions_HW112).sum(dim=-1)
+        self.register_buffer("cos_HWhF", torch.cos(theta_HWhF))
+        self.register_buffer("sin_HWhF", torch.sin(theta_HWhF))
+
+    def forward(self, input_NHWhd: torch.Tensor) -> torch.Tensor:
+        x_NHWhF, y_NHWhF = input_NHWhd.float().chunk(2, dim=-1)
+        x_out_NHWhF = x_NHWhF * self.cos_HWhF - y_NHWhF * self.sin_HWhF
+        y_out_NHWhF = x_NHWhF * self.sin_HWhF + y_NHWhF * self.cos_HWhF
+        output_NHWhd = torch.cat((x_out_NHWhF, y_out_NHWhF), dim=-1)
+        return output_NHWhd.type_as(input_NHWhd)</code></pre>
+            <p class="figcaption">
+                This implementation assumes a fixed input height/width and precomputes
+                the rotation matrix. <br><br>
+
+                <code>direction_spacing</code> can be set to \(\pi / 2\) to
+                (approximately) emulate axial RoPE, although this will cause the y
+                frequencies to be slightly larger than the x frequencies on average.
+                <br>
+                <br>Dimension key:
+                <br><code class="shazeer">N:</code> batch size
+                <br><code class="shazeer">H:</code> input height
+                <br><code class="shazeer">W:</code> input width
+                <br><code class="shazeer">h:</code> number of attention heads
+                <br><code class="shazeer">d:</code> head dimensionality
+                <br><code class="shazeer">F:</code> num_freqs == d // 2
+            </p>
+        </div>
+
+        <h3>Uniform Nd RoPE (PyTorch)</h3>
+
+        <div class="figure" id="ropend_impl">
+            <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
+    # Quasi-random samples from the uniform distribution using Kronecker sequences
+    primes = [2, 3, 5, 7, 11, 13, 17, 19]
+    x = 23
+    while len(primes) < dim:
+        if all(x % p != 0 for p in primes):
+            primes.append(x)
+        x += 2
+    z = (
+        torch.arange(1, n + 1).reshape(n, 1)
+        * torch.sqrt(torch.tensor(primes[:dim], dtype=torch.float64))
+    ).fmod(1.0)
+
+    # Map samples from U[0, 1] to N(0, 1)
+    z = math.sqrt(2) * torch.erfinv(2 * z - 1)
+
+    directions = z / z.norm(dim=1, keepdim=True)
+    return directions.float()
+
+
+class UniformRoPENd(nn.Module):
+    pass  # TODO</code></pre>
+            <p class="figcaption">
+                This implementation expects positions normalized to [-1.0, 1.0].
+                <br>
+                <br><code class="shazeer">P:</code> # of positional dimensions
+            </p>
+        </div>
+
+        <h2 id="hyperparams">Hyperparameters</h2>
+
+        <p>
+            CIFAR10 experiments were run on a single A40 GPU. The augmentations for
+            CIFAR10 were: ColorJitter(brightness=0.1, contrast=0.1, saturation=0.05,
+            hue=0.025), random padding by up to 4 pixels, and a random horizontal flip
+            with p=0.5. The architecture involves RMSNorm on the input to each residual
+            block, the queries, and the keys; ReLU^2 activations; learnable
+            zero-init per-channel scaling on the last linear layer of each block; and no
+            biases. Linear layers were optimized with Muon. The per-channel scalings,
+            and, when applicable, the learnable APE or the frequencies for MixedRoPE,
+            were optimized with AdamW.
+        </p>
+
+        <table>
+            <tr>
+                <td>Steps</td>
+                <td>10,000 (200 epochs)</td>
+            </tr>
+            <tr>
+                <td>Batch size</td>
+                <td>1,000</td>
+            </tr>
+            <tr>
+                <td>Muon LR</td>
+                <td>0.06</td>
+            </tr>
+            <tr>
+                <td>Muon momentum</td>
+                <td>0.95</td>
+            </tr>
+            <tr>
+                <td>Muon weight decay</td>
+                <td>0.01</td>
+            </tr>
+            <tr>
+                <td>AdamW LR</td>
+                <td>0.003</td>
+            </tr>
+            <tr>
+                <td>AdamW betas</td>
+                <td>(0.9, 0.95)</td>
+            </tr>
+            <tr>
+                <td>AdamW weight decay</td>
+                <td>0.01</td>
+            </tr>
+            <tr>
+                <td>LR linear cooldown start</td>
+                <td>7,500</td>
+            </tr>
+            <tr>
+                <td>Label smoothing</td>
+                <td>0.1</td>
+            </tr>
+            <tr>
+                <td>Patch size</td>
+                <td>4</td>
+            </tr>
+            <tr>
+                <td>dim</td>
+                <td>384</td>
+            </tr>
+            <tr>
+                <td>MLP dim</td>
+                <td>768</td>
+            </tr>
+            <tr>
+                <td>depth (# attn layers)</td>
+                <td>6</td>
+            </tr>
+            <tr>
+                <td>APE init std</td>
+                <td>0.5</td>
+            </tr>
+        </table>
+    </div>
+
+    <script type="module" src="rope_fig1.js"></script>
+    <script type="module" src="rope_fig2.js"></script>
+    <script type="module" src="rope_fig3.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+
+</html>

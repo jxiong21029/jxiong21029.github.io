@@ -209,8 +209,8 @@
             </div>
 
             <p class="figcaption">
-                <em>Fig. 1</em>. Pre-softmax attention scores between a fixed query and
-                rotations of that query over varying positions. <br><br>
+                <em>Fig. 1</em>. Cosine similarities between a fixed query and rotations
+                of that query over varying positions. <br><br>
                 Typical axial RoPE rotates half of each head's components based on
                 distance along the x-axis, and the other half based on distance along
                 the y-axis, which results in striped artifacts and poorly concentrated
@@ -229,16 +229,16 @@
 
         <p>
             One of the simplest ways of encoding relative positional information in
-            attention is to add a scalar to each attention logit depending on the
+            attention is to add a scalar to each attention logit, that depends on the
             distance between the corresponding query and key (e.g. T5, ALiBi).
         </p>
 
         <p>
             However, this makes it difficult for a query to attend to any specific (key,
-            relative position) pair: in particular, the query must have a component pointing
-            in the direction of the desired key, but this increases the attention
-            scores from that query to all tokens with that key, <em>regardless</em> of
-            their position.
+            relative position) pair. In particular, the query must have a component
+            pointing in the direction of the desired key, but this increases the
+            attention scores with all tokens with that key, <em>regardless</em> of their
+            position.
         </p>
 
         <!-- <p class="aside">
@@ -250,17 +250,17 @@
         <p>
             Rotary positional embeddings (RoPE) are an elegant solution to this problem.
             Essentially, the query and key vectors for every token are rotated in the
-            same direction, with an angle of rotation proportional to the token's (1-d
-            coordinate) position.
+            same direction, with an angle of rotation proportional to the token's 1-d
+            coordinate position.
         </p>
 
         <p class="aside">
             To be specific, each attention head has its \(D\) channel dimensions divided
-            into \(D / 2\) dimension pairs. For a given query or key input vector, \(x
-            \in \mathbb R^D\), located at a position, \(t\), the two components of the
-            vector corresponding to the \(i\)th dimension pair, \((x_{2i + 1}, x_{2i +
-            2})\), are rotated about the origin by an angle \(\omega_i \cdot t\), where
-            \(\omega_i\) is the angular frequency corresponding to \(i\):
+            into \(D / 2\) dimension pairs. For a given query or key input vector \(x
+            \in \mathbb R^D\) located at position \(t\), the \(i\)th dimension pair
+            \((x_{2i + 1}, x_{2i + 2})\) is rotated about the origin by an angle
+            \(\omega_i \cdot t\), where \(\omega_i\) is the angular frequency
+            corresponding to \(i\):
             \[
             \text{RoPE1d} (x, t) =
             {\small
@@ -277,9 +277,8 @@
             x.
             \]
             The composition of independent rotations on orthogonal 2d planes is itself
-            just a higher-dimensional rotation, so (for randomly sampled inputs), RoPE
-            is essentially rotating the vector as a whole at a (tangential) velocity
-            satisfying
+            just a higher-dimensional rotation, so RoPE is essentially rotating the
+            vector as a whole at an expected velocity satisfying
             \[ \mathbb E_x\left[ \left\| \frac{\partial}{\partial t}
             \text{RoPE}(x, t) \right\|_{\text{RMS}}^2 \right] = \frac{1}{D}
             \sum_{i=1}^{D / 2} \omega_i^2.\]
@@ -288,21 +287,20 @@
             the \(i\)th frequency magnitude is \[\omega_i = \omega_\text{min} \cdot
             (\omega_\text{max} / \omega_\text{min}) ^{i / (D/2 - 1)}.\]
 
-            Intuitively, including a range of frequencies (rather than
-            just setting all frequencies to the RMS frequency) enables queries which are
-            more or less specific about position, by using relatively larger components
-            in the higher or lower frequencies, respectively. For example, restricting a
-            query vector to a prefix of an attention head's dimensions effectively
-            reduces the rotation's maximum frequency.
+            Intuitively, including a range of frequencies, rather than just setting all
+            frequencies to the RMS frequency, enables queries which are more or less
+            specific about position. For example, restricting a query vector to a prefix
+            of an attention head's dimensions effectively reduces the rotation's maximum
+            frequency, increasing the range of positions targeted by the query.
         </p>
 
         <p>
-            By applying an equivalent rotation to both the queries and the keys, RoPE
-            encodes only relative positional information (rotating two vectors by the
-            same angle doesn't affect their inner product). In theory, attending to a
-            specific (key, relative position) pair is possible by simply setting the
-            query to a large vector in the direction of the desired key vector rotated
-            by the corresponding angle.
+            RoPE is applied to both the queries and the keys, making it encode only
+            relative positional information (rotating two vectors by the same angle
+            doesn't affect their inner product). In theory, attending to a specific
+            (key, relative position) pair is possible by simply setting the query to a
+            large vector in the direction of the desired key vector rotated by the
+            corresponding angle.
         </p>
 
         <div class="figure">
@@ -330,8 +328,8 @@
             </div>
 
             <p class="figcaption">
-                <em>Fig 2</em>. Pre-softmax attention scores between a fixed query and
-                the 1d-RoPE-rotated version of itself, over varying positions.
+                <em>Fig 2</em>. Cosine similarities between a fixed query and the
+                1d-RoPE-rotated version of itself, over varying positions.
                 <br><br>
                 Note that this plot is designed for positions normalized to [-1.0, 1.0].
                 In language modeling, positions are usually defined as just the integer
@@ -366,13 +364,12 @@
             Similar to 1d RoPE, 2d axial RoPE also encodes purely relative positional
             information. However, unlike 1d RoPE, 2d axial RoPE does not enable
             attending solely to specific (key, relative position) pairs. In particular,
-            the first half of a query (which rotates according to x-position)
-            contributes the same amount to the attention score for a key regardless of
-            the key's y-position, and similarly, the second half of a query contributes
-            the same amount regardless of the key's x-position. Attending to a token
-            means necessarily attending to any tokens with similar keys located in the
-            same row or column, with a pre-softmax attention score at least about half
-            as large.
+            the first half of a query, which rotates according to x-position contributes
+            the same amount to the attention score for a key regardless of the key's
+            y-position. Similarly, the second half of a query contributes the same
+            amount regardless of the key's x-position. Attending to a token means
+            necessarily attending to any tokens with similar keys located in the same
+            row or column, with a cosine alignment at least half as large.
         </p>
 
         <p>
@@ -385,22 +382,20 @@
             cite Heo et al. are simply using axial RoPE anyway.</p> -->
 
         <p>
-            In other words, during initialization, unit directions
-            \(\{\mathbf{u}_i\}_{i=1}^{D/2}, \mathbf{u}_i \in \mathbb{R}^2,
-            \|\mathbf{u}_i\|_2 = 1\) are selected for each of the \(D/2\) dimension
-            pairs. Then, during inference, to determine the angle of rotation for the
-            \(i\)th pair (which for 1d RoPE, was simply the scalar frequency
-            \(\omega_i\) times the token's 1d coordinate position), the token's 2d
-            position is projected to \(\mathbf{u}_i\) to obtain a scalar inner product,
-            before being multiplied by \(\omega_i\) as before.
+            At initialization, unit directions \(\{\mathbf{u}_i\}_{i=1}^{D/2},
+            \mathbf{u}_i \in \mathbb{R}^2, \|\mathbf{u}_i\|_2 = 1\) are selected for
+            each of the \(D/2\) dimension pairs. During inference, to determine the
+            angle of rotation for the \(i\)th pair (for 1d RoPE, this was just the
+            scalar frequency \(\omega_i\) times the token's 1d coordinate position), the
+            token's 2d position is projected to \(\mathbf{u}_i\) to obtain a scalar
+            inner product, before being multiplied by \(\omega_i\) as before.
         </p>
 
         <p class="aside">
             To be precise, the general RoPE operation in \(N\) dimensions can be written
             as
             \[
-            \text{RoPE}_{\{q, k\}} (x, \mathbf{t}) =
-            {\scriptsize
+            \text{RoPE} (x, \mathbf{t}) =
             \begin{pmatrix}
             \cos (\omega_1 \langle \mathbf{u}_1, \mathbf{t} \rangle) & -\sin (\omega_1
             \langle \mathbf{u}_1, \mathbf{t} \rangle) & \cdots & 0 & 0 \\
@@ -414,19 +409,17 @@
             \rangle) & \cos (\omega_{D / 2} \langle \mathbf{u}_{D / 2}, \mathbf{t}
             \rangle) \\
             \end{pmatrix}
-            }
-            W_{\{q, k\}} x.
+            x.
             \]
-            This includes axial RoPE, which is the special case when the directions
+            This includes axial RoPE as a special case when
             \(\{\mathbf{u}_i\}_{i=1}^{D/2}\) are in the standard basis.
         </p>
 
         <p>
-            It turns out that, by spacing out the directions
-            \(\{\mathbf{u}_i\}_{i=1}^{D / 2}\) uniformly on the unit circle, while
-            keeping the same log-spaced frequency magnitudes
-            \(\{\omega_i\}_{i=1}^{D/2}\) as 1d RoPE, the periodic oscillations of each
-            pair approximately cancel each other out at long distances, producing a
+            It turns out that, by spacing out \(\{\mathbf{u}_i\}_{i=1}^{D / 2}\)
+            uniformly on the unit circle, while keeping the same log-spaced frequency
+            magnitudes \(\{\omega_i\}_{i=1}^{D/2}\) as 1d RoPE, the periodic
+            oscillations of each pair approximately cancel each other out and produce a
             concentrated attention map.
         </p>
 
@@ -456,34 +449,34 @@
         </p>
         <p class="aside">
             Intuitively, typical neural network parameters, e.g. the weights of a linear
-            layer, have the property that a small gradient step on some given
-            input to the layer, that changes the layer's output in a certain way, will
-            change the layer's outputs for other inputs in a similar way, with the size
-            of that change proportional to how similar those inputs are to the given
-            input. Small changes in the frequency vectors of RoPE have no such effect,
-            which perhaps makes them less amenable to optimization via gradient.
+            layer, have the property that a small gradient step on some training input,
+            that changes the layer's output in a certain way, also changes the layer's
+            outputs for other inputs in a similar way. The size of this change is
+            proportional to how similar those other inputs are to the training input.
+            In contrast, small changes to the frequency vectors of RoPE have no such
+            effect, which perhaps makes them less amenable to gradient optimization.
         </p>
 
         <p>
             If these frequency vectors are kept frozen instead, then we would like to
-            initialize them deterministically, while still distributing them uniformly
-            in terms of both direction and magnitude. In two dimensions, a simple
-            approach is to arrange the frequency vectors for each head in order of
-            increasing magnitude, then rotating the \(i\)th vector to an angle of
-            \(i\cdot \Delta\phi\) for some spacing \(\Delta\phi\). As long as
-            \(\Delta\phi\) isn't too small or <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
-                approximated</a> as a rational multiple of \(2\pi\), the resulting
-            vectors will be distributed approximately uniformly. A good option is
-            \(\Delta\phi = 2\pi / \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is
-            the golden ratio (kudos to Kevin Yin @ad8e for the suggestion).
+            initialize them deterministically, while still distributing them uniformly.
+            In two dimensions, a simple approach is to arrange the frequency vectors for
+            each head in order of increasing magnitude, then rotating the \(i\)th vector
+            to an angle of \(i\cdot \Delta\phi\) for some spacing \(\Delta\phi\). As
+            long as \(\Delta\phi\) isn't too small or
+            <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
+                approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
+            will be distributed approximately uniformly. A good option is \(\Delta\phi =
+            2\pi / \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio
+            (kudos to Kevin Yin @ad8e for the suggestion).
         </p>
 
         <p>
             For embedding positions in \(N > 2\) dimensions, one option that works well
-            and is fairly simple to implement is to sample from \(U(0, 1)\)
-            quasi-randomly via Kronecker sequences (the fractional parts of multiples of
-            prime square roots), mapping them to Gaussian samples using the inverse CDF,
-            and then normalizing to length one, e.g. see the implementation <a href="#ropend_impl">here</a>.
+            and is fairly easy to implement is to sample from \(U(0, 1)\) quasi-randomly
+            via Kronecker sequences (the fractional parts of multiples of prime square
+            roots), mapping them to Gaussian samples using the inverse CDF, and then
+            normalizing to length one. An example implementation is provided <a href="#ropend_impl">here</a>.
         </p>
         <!-- <div class="figure">
             <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
@@ -516,36 +509,47 @@
         </p>
         <ul>
             <li>
-                Learned absolute positional embeddings (APE), the approach used in the
-                original vision transformer paper
-                (<a href="https://arxiv.org/abs/2010.11929">Dosovitskiy et al. 2020</a>).
+                Learned absolute positional embeddings (APE)
+                <ul>
+                    <li class="note">
+                        From the original vision transformer paper (<a
+                            href="https://arxiv.org/abs/2010.11929">Dosovitskiy et al.
+                            2020</a>).
+                    </li>
+                </ul>
             </li>
             <li>
-                Fixed sin/cos positional embeddings (SinCos), an absolute positional
-                embedding approach suggested in
-                <a href="https://arxiv.org/abs/2205.01580">Beyer et al. 2022</a>.
-                Similar to the positional embedding from the original transformer paper,
-                but with one half derived from the x-position and the other half derived
-                from y.
+                Fixed sin/cos positional embeddings (SinCos)
+                <ul>
+                    <li class="note">
+                        Another absolute positional embedding approach. Suggested in <a
+                            href="https://arxiv.org/abs/2205.01580">Beyer et al. 2022</a>.
+                        Similar to the positional embedding from the original
+                        transformer paper, but with one half derived from the x-position
+                        and the other half derived from y. Frozen
+                    </li>
+                </ul>
             </li>
             <li>
-                Axial RoPE.
+                Axial RoPE
             </li>
             <li>
                 MixedRoPE
                 (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>) with
                 learned, randomly initalized frequencies. The official implementation
-                uses (\(\omega_\text{min}\) = 0.65, \(\omega_\text{max}\) = 6.5).
-                <span class="note">
-                    To be specific, they use frequencies from 0.1 to 1.0 while working
-                    with integer row/column positions ranging from 0 to 13, whereas here
-                    the frequencies are expressed w.r.t positions normalized to [-1.0,
-                    1.0].
-                </span>
+                uses (\(\omega_\text{min}\) = 0.65, \(\omega_\text{max}\) = 6.5)
+                <ul>
+                    <li class="note">
+                        To be specific, they use frequencies from 0.1 to 1.0 when
+                        working with integer row/column positions ranging from 0 to 13,
+                        but here I'm expressed the frequencies w.r.t positions
+                        normalized to [-1.0, 1.0]
+                    </li>
+                </ul>
             </li>
             <li>
                 RoPE with frozen, uniformly spaced directions (UniformRoPE), including
-                random and determinstic initializations.
+                random and deterministic initializations.
             </li>
         </ul>
         <p>
@@ -628,7 +632,9 @@
             initialization performed best.
         </p>
 
-        <h3 class="note">Classification on ImageNet-1K # TODO</h3>
+        <h3>Classification on ImageNet-1K</h3>
+
+        <p>Now training ViT B/16 sized models (~86M parameters)</p>
 
         <h2>Acknowledgements</h2>
         <p>

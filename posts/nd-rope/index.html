@@ -632,7 +632,8 @@
         <p>
             For CIFAR10, I trained small (7M parameter) ViTs with 4x4 patches for 200
             epochs. Below, I'm reporting test set negative log-likelihood (NLL) and
-            accuracy (mean ± std over 2 seeds). See hyperparameters <a href="#cifar10_hyperparams">here</a>.
+            accuracy (mean ± std over 2 seeds). See hyperparameters <a href="#cifar10_hyperparams">here</a>. See code <a
+                href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/cifar_classification.py">here</a>.
         </p>
 
         <p>
@@ -724,7 +725,8 @@
             epochs. I used broadly the same setup as for CIFAR10, but with a small
             amount of RandAugment and MixUp. Due to computational considerations I only
             compared SinCos, axial RoPE, and uniform RoPE (deterministic). See
-            hyperparameters <a href="#imagenet1k_hyperparams">here</a>.
+            hyperparameters <a href="#imagenet1k_hyperparams">here</a>. See code <a
+                href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/imagenet_classification.py">here</a>.
         </p>
 
         <table>
@@ -741,7 +743,7 @@
                 <td class="bigcol">✓</td>
                 <td>1.0</td>
                 <td>100.0</td>
-                <td></td>
+                <td># TODO</td>
                 <td></td>
             </tr>
             <tr>
@@ -749,7 +751,7 @@
                 <td class="bigcol">✓</td>
                 <td>1.0</td>
                 <td>100.0</td>
-                <td></td>
+                <td># TODO</td>
                 <td></td>
             </tr>
             <tr>
@@ -1040,6 +1042,7 @@ class UniformRoPENd(nn.Module):
         </p>
 
         <h2>References</h2>
+        <p># TODO</p>
 
         <h2>Citation</h2>
         <div class="figure">

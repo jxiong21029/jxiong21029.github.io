@@ -849,10 +849,12 @@
             RoPE, mixed RoPE, and uniform RoPE had about the same performance on
             ImageNet, with Mixed RoPE at a slight advantage.
 
-            From analyzing the learned frequencies of Mixed RoPE, I found that a decent
-            fraction were moved close to zero. Following <a href="https://arxiv.org/abs/2410.06205">Barbero et al.</a>,
-            I tried setting a fraction of the frequencies to zero (p=0.25 in this case)
-            for uniform RoPE and found that it slightly outperformed mixed RoPE.
+            From analyzing the learned frequencies of Mixed RoPE, I found that a good
+            portion of the learned frequencies decreased to almost zero during training.
+            Based on <a href="https://github.com/KellerJordan/modded-nanogpt">modded-nanogpt</a> and
+            <a href="https://arxiv.org/abs/2410.06205">Barbero et al. 2024</a>,
+            I set a fraction (p=0.25) of the frequencies of Uniform RoPE to zero and
+            found that it outperformed mixed RoPE by a slim margin in this case.
         </p>
 
         <p>
@@ -885,7 +887,10 @@
             <tr>
                 <td style="text-align: left">Axial RoPE</td>
                 <td class="bigcol"></td>
-                <td># TODO</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>[in progress...] </td>
                 <!-- <td>0.2</td>
                 <td>20.0</td>
                 <td>0</td>
@@ -912,6 +917,21 @@
             </tr>
         </table>
 
+        <h2>Discussion</h2>
+        <p>
+            Overall, it seems like uniform RoPE was consistently among the best
+            approaches when the frequency magnitudes were properly tuned. Mixed RoPE,
+            with learnable frequencies, also performed well. However, Mixed RoPE was
+            also fairly sensitive to the initialization magnitude of the frequencies,
+            and can also require tuning the learning rate for the frequencies (which,
+            under my setup, were optimized separately with AdamW rather than Muon, due
+            to not being matrix parameters). I noticed that if the learning rate for the
+            MixedRoPE frequencies was tuned poorly, learnability could actively
+            hurt performance. I would generally recommend defaulting to uniform RoPE,
+            and performing at least a small amount of tuning on the RoPE frequency
+            magnitudes regardless of the approach used.
+        </p>
+
         <h2>Reference implementations</h2>
         <h3>Uniform 2d RoPE (PyTorch)</h3>
 
@@ -924,11 +944,39 @@
         head_dim: int,
         min_freq: float,
         max_freq: float,
+        p_zero_freqs: float = 0.0,
         direction_spacing: float = math.pi * (math.sqrt(5) - 1),
     ):
+        """
+        Args:
+            image_size: expected height and width of (patchified) input
+            n_heads: number of attention heads
+            head_dim: attention head dimensionality
+            min_freq, max_freq: lowest and highest nonzero frequency magnitudes
+            p_zero_freqs: proportion of frequencies set to 0
+            direction_spacing: difference in radians between adjacent directions along
+                which position is measured
+        
+        Dimension key:
+            N: batch size
+            H: image_size[0]
+            W: image_size[1]
+            h: n_heads
+            d: head_dim
+            F: num_freqs == d // 2
+        """
         super().__init__()
+        assert head_dim % 2 == 0
+        assert 0 <= p_zero_freqs <= 1
         n_freqs = head_dim // 2
-        omega_F = min_freq * (max_freq / min_freq) ** torch.linspace(0, 1, n_freqs)
+        n_zero_freqs = round(p_zero_freqs * n_freqs)
+        omega_F = torch.cat(
+            (
+                torch.zeros(n_zero_freqs),
+                min_freq
+                * (max_freq / min_freq) ** torch.linspace(0, 1, n_freqs - n_zero_freqs),
+            )
+        )
         phi_hF = (
             torch.arange(n_heads * n_freqs).reshape(n_heads, n_freqs)
             * direction_spacing
@@ -937,7 +985,6 @@
         freqs_hF2 = omega_F.unsqueeze(-1) * directions_hF2
 
         H, W = image_size
-        # Normalize positions so that xlim * ylim == 1, xlim / ylim == W / H
         xlim, ylim = math.sqrt(W / H), math.sqrt(H / W)
         x_HW = torch.linspace(-xlim, xlim, W).reshape(1, W).expand(H, W)
         y_HW = torch.linspace(-ylim, ylim, H).reshape(H, 1).expand(H, W)
@@ -960,14 +1007,6 @@
                 <code>direction_spacing</code> can be set to \(\pi / 2\) to
                 (approximately) emulate axial RoPE, although this will cause the y
                 frequencies to be slightly larger than the x frequencies on average.
-                <br>
-                <br>Dimension key:
-                <br><code class="shazeer">N:</code> batch size
-                <br><code class="shazeer">H:</code> input height
-                <br><code class="shazeer">W:</code> input width
-                <br><code class="shazeer">h:</code> number of attention heads
-                <br><code class="shazeer">d:</code> head dimensionality
-                <br><code class="shazeer">F:</code> num_freqs == d // 2
             </div>
         </figure>
 
@@ -975,13 +1014,15 @@
 
         <figure>
             <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
-    # Quasi-random samples from the uniform distribution using Kronecker sequences
+    """Returns n quasi-random vectors distrib. uniformly on the hypersphere in R^dim"""
     primes = [2, 3, 5, 7, 11, 13, 17, 19]
     x = 23
     while len(primes) < dim:
         if all(x % p != 0 for p in primes):
             primes.append(x)
         x += 2
+
+    # Sample from U[0, 1] quasi-randomly using Kronecker sequences
     z = (
         torch.arange(1, n + 1).reshape(n, 1)
         * torch.sqrt(torch.tensor(primes[:dim], dtype=torch.float64))
@@ -990,6 +1031,7 @@
     # Map samples from U[0, 1] to N(0, 1)
     z = math.sqrt(2) * torch.erfinv(2 * z - 1)
 
+    # Project to surface of the unit hypersphere
     directions = z / z.norm(dim=1, keepdim=True)
     return directions.float()
 
@@ -1003,12 +1045,36 @@ class UniformRoPENd(nn.Module):
         min_freq: float,
         max_freq: float,
     ):
+        """
+        Args:
+            pos_dim: dimensionality of the token positions
+            n_heads: number of attention heads
+            head_dim: attention head dimensionality
+            min_freq, max_freq: lowest and highest nonzero frequency magnitudes
+            p_zero_freqs: proportion of frequencies set to 0
+
+        Dimension key:
+            N: batch size
+            L: number of tokens per sample
+            P: pos_dim
+            h: n_heads
+            d: head_dim
+            F: num_freqs == head_dim // 2
+        """
         super().__init__()
         n_freqs = head_dim // 2
+        n_zero_freqs = round(p_zero_freqs * n_freqs)
+        omega_F = torch.cat(
+            (
+                torch.zeros(n_zero_freqs),
+                min_freq
+                * (max_freq / min_freq) ** torch.linspace(0, 1, n_freqs - n_zero_freqs),
+            )
+        )
+
         directions_hFP = uniform_directions(n_heads * n_freqs, pos_dim).reshape(
             n_heads, n_freqs, pos_dim
         )
-        omega_F = min_freq * (max_freq / min_freq) ** torch.linspace(0, 1, n_freqs)
         self.register_buffer("freqs_hFP", directions_hFP * omega_F.reshape(n_freqs, 1))
 
     def forward(self, input_NLhd: torch.Tensor, pos_NLP: torch.Tensor) -> torch.Tensor:
@@ -1185,7 +1251,7 @@ class UniformRoPENd(nn.Module):
             <!-- <a href="https://cgdct.moe/">Stephen Huan</a> for contributing NOTHING -->
         </p>
 
-        <h2>Citation</h2>
+        <h2>How to cite</h2>
         <div class="figure">
             <pre class="code"><code>@misc{xiong2025ndrope
     author = {Jerry Xiong},

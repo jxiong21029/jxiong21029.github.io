@@ -548,10 +548,9 @@
             generally only induce a large change in the layer's outputs for inputs
             similar to that training input.
 
-            In contrast, small changes to the frequency vectors of RoPE will modify the
-            layer's outputs on inputs at every position with directions and magnitudes
-            that may as well be arbitrary, which perhaps makes these frequencies less
-            amenable to gradient optimization.
+            In contrast, changes to the frequency vectors of RoPE will nontrivially modify the
+            attention scores between almost all query-key pairs, which perhaps makes
+            these frequencies less amenable to gradient optimization.
         </p>
 
         <p>
@@ -636,7 +635,7 @@
                 Axial RoPE
             </li>
             <li>
-                RoPE with learned, randomly initialized frequencies, i.e. mixed RoPE (<a
+                RoPE with learned, randomly initialized frequencies (mixed RoPE, <a
                     href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>)
             </li>
             <li>
@@ -924,12 +923,11 @@
             with learnable frequencies, also performed well. However, Mixed RoPE was
             also fairly sensitive to the initialization magnitude of the frequencies,
             and can also require tuning the learning rate for the frequencies (which,
-            under my setup, were optimized separately with AdamW rather than Muon, due
-            to not being matrix parameters). I noticed that if the learning rate for the
-            MixedRoPE frequencies was tuned poorly, learnability could actively
-            hurt performance. I would generally recommend defaulting to uniform RoPE,
-            and performing at least a small amount of tuning on the RoPE frequency
-            magnitudes regardless of the approach used.
+            under my setup, were optimized separately with AdamW rather than Muon). I
+            noticed that if the learning rate for the MixedRoPE frequencies was tuned
+            poorly, learnability could actively hurt performance. I would generally
+            recommend defaulting to uniform RoPE, and performing at least a small amount
+            of tuning on the RoPE frequency magnitudes regardless of the approach used.
         </p>
 
         <h2>Reference implementations</h2>

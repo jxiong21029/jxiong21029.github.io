@@ -51,7 +51,7 @@
             margin-bottom: 0px;
         }
 
-        .math-scroll {
+        .xscroll {
             overflow-x: auto;
         }
 
@@ -95,7 +95,7 @@
             /* width: 16em; */
             /* flex: 1 0 auto; */
             flex: 1 0 auto;
-            width: 300px;
+            max-width: 300px;
             color: gray;
             font-family: sans-serif;
             font-size: 16px;
@@ -132,12 +132,21 @@
             width: 100%;
         }
 
+        .codecaption {
+            flex: 1 0 auto;
+            width: 30ch;
+            color: gray;
+            font-family: sans-serif;
+            font-size: 16px
+        }
+
         @media (max-width: 600px) {
 
             .figcontrols,
             figcaption,
             .codecaption,
-            .fig-wrapper {
+            .fig-wrapper,
+            .wide-fig-stuff {
                 flex: 1 1 100%;
             }
         }
@@ -181,24 +190,12 @@
             color: gray
         }
 
-        .shazeer {
-            margin-left: 2ch;
-        }
-
         .code {
             margin: 0;
             flex: 1 1 100ch;
             font-size: 12px;
             line-height: 16px;
             overflow-x: auto;
-        }
-
-        .codecaption {
-            flex: 1 0 auto;
-            width: 30ch;
-            color: gray;
-            font-family: sans-serif;
-            font-size: 16px
         }
 
         #author {
@@ -317,7 +314,7 @@
             \(\omega_i \cdot t\), where \(\omega_i\) is the angular frequency
             corresponding to \(i\):
         </p>
-        <div class="aside math-scroll">
+        <div class="aside xscroll">
             \[
             \text{RoPE1d} (x, t) =
             {\small
@@ -467,7 +464,7 @@
             To be precise, the general RoPE operation in \(N\) dimensions can be written
             as
         </p>
-        <div class="aside math-scroll">
+        <div class="aside xscroll">
             \[
             \text{RoPE} (x, \mathbf{t}) =
             {\small
@@ -674,40 +671,41 @@
         </p>
 
         <h4>CIFAR10 ViT(dim=384, mlp_dim=768, depth=6) / patch 4 @ 200 epochs</h4>
-        <table>
-            <tr>
-                <th>Method</th>
-                <th>Learned</th>
-                <th>\(\omega_\text{min}\)</th>
-                <th>\(\omega_\text{max}\)</th>
-                <th>Valid NLL (↓)</th>
-                <th>Valid Accuracy (%) (↑)</th>
-            </tr>
-            <tr>
-                <td style="text-align: left">APE</td>
-                <td class="bigcol">✓</td>
-                <td>N/A</td>
-                <td>N/A</td>
-                <td>0.4287 ± 0.0031</td>
-                <td>89.70 ± 0.03</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">SinCos</td>
-                <td class="bigcol"></td>
-                <td>1.00</td>
-                <td>100.0</td>
-                <td>0.4144 ± 0.0124</td>
-                <td>89.93 ± 0.45</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Axial RoPE</td>
-                <td class="bigcol"></td>
-                <td>0.50</td>
-                <td>50.0</td>
-                <td>0.3535 ± 0.0018</td>
-                <td>91.95 ± 0.05</td>
-            </tr>
-            <!-- <tr>
+        <div class="xscroll">
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Learned</th>
+                    <th>\(\omega_\text{min}\)</th>
+                    <th>\(\omega_\text{max}\)</th>
+                    <th>Valid NLL (↓)</th>
+                    <th>Valid Accuracy (%) (↑)</th>
+                </tr>
+                <tr>
+                    <td style="text-align: left">APE</td>
+                    <td class="bigcol">✓</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>0.4287 ± 0.0031</td>
+                    <td>89.70 ± 0.03</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">SinCos</td>
+                    <td class="bigcol"></td>
+                    <td>1.00</td>
+                    <td>100.0</td>
+                    <td>0.4144 ± 0.0124</td>
+                    <td>89.93 ± 0.45</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Axial RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.50</td>
+                    <td>50.0</td>
+                    <td>0.3535 ± 0.0018</td>
+                    <td>91.95 ± 0.05</td>
+                </tr>
+                <!-- <tr>
                 <td></td>
                 <td class="bigcol">✓</td>
                 <td>1.0</td>
@@ -715,31 +713,31 @@
                 <td>0.3694 ± 0.0009</td>
                 <td>91.37 ± 0.05</td>
             </tr> -->
-            <tr>
-                <td style="text-align: left">Mixed RoPE, original freqs</td>
-                <td class="bigcol">✓</td>
-                <td>0.65</td>
-                <td>6.5</td>
-                <td>0.3550 ± 0.0072</td>
-                <td>91.63 ± 0.32</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Mixed RoPE, adjusted freqs</td>
-                <td class="bigcol">✓</td>
-                <td>1.00</td>
-                <td>100.0</td>
-                <td>0.3394 ± 0.0015</td>
-                <td>92.43 ± 0.07</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">LieRE</td>
-                <td class="bigcol">✓</td>
-                <td>N/A</td>
-                <td>N/A</td>
-                <td>0.3461 ± 0.0023</td>
-                <td>91.95 ± 0.04</td>
-            </tr>
-            <!-- <tr>
+                <tr>
+                    <td style="text-align: left">Mixed RoPE, original freqs</td>
+                    <td class="bigcol">✓</td>
+                    <td>0.65</td>
+                    <td>6.5</td>
+                    <td>0.3550 ± 0.0072</td>
+                    <td>91.63 ± 0.32</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Mixed RoPE, adjusted freqs</td>
+                    <td class="bigcol">✓</td>
+                    <td>1.00</td>
+                    <td>100.0</td>
+                    <td>0.3394 ± 0.0015</td>
+                    <td>92.43 ± 0.07</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">LieRE</td>
+                    <td class="bigcol">✓</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>0.3461 ± 0.0023</td>
+                    <td>91.95 ± 0.04</td>
+                </tr>
+                <!-- <tr>
                 <td>Uniform RoPE, random init</td>
                 <td class="bigcol">✓</td>
                 <td>1.0</td>
@@ -747,15 +745,16 @@
                 <td>0.3382 ± 0.0005</td>
                 <td>92.25 ± 0.01</td>
             </tr> -->
-            <tr>
-                <td style="text-align: left">Uniform RoPE</td>
-                <td class="bigcol"></td>
-                <td>1.00</td>
-                <td>100.0</td>
-                <td>0.3292 ± 0.0023</td>
-                <td>92.43 ± 0.05</td>
-            </tr>
-        </table>
+                <tr>
+                    <td style="text-align: left">Uniform RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>1.00</td>
+                    <td>100.0</td>
+                    <td>0.3292 ± 0.0023</td>
+                    <td>92.43 ± 0.05</td>
+                </tr>
+            </table>
+        </div>
 
         <p>
             Both absolute position embedding methods performed poorly. Mixed RoPE
@@ -784,62 +783,64 @@
         </p>
 
         <h4>ImageNet-1K ViT B/16 @ 90 epochs</h4>
-        <table>
-            <tr>
-                <th>Method</th>
-                <th>Learned</th>
-                <th>\(\omega_\text{min}\)</th>
-                <th>\(\omega_\text{max}\)</th>
-                <th>Zero freqs (%)</th>
-                <th>Valid NLL (↓)</th>
-                <th>Valid Accuracy (%) (↑)</th>
-            </tr>
-            <tr>
-                <td style="text-align: left">SinCos</td>
-                <td class="bigcol"></td>
-                <td>1.0</td>
-                <td>100.0</td>
-                <td>0</td>
-                <td>0.8444</td>
-                <td>78.71</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Axial RoPE</td>
-                <td class="bigcol"></td>
-                <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.8034</td>
-                <td>79.58</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Mixed RoPE</td>
-                <td class="bigcol">✓</td>
-                <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.8025</td>
-                <td>79.73</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Uniform RoPE</td>
-                <td class="bigcol"></td>
-                <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.8064</td>
-                <td>79.67</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">"</td>
-                <td class="bigcol"></td>
-                <td></td>
-                <td></td>
-                <td>25</td>
-                <td>0.7979</td>
-                <td>79.78</td>
-            </tr>
-        </table>
+        <div class="xscroll">
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Learned</th>
+                    <th>\(\omega_\text{min}\)</th>
+                    <th>\(\omega_\text{max}\)</th>
+                    <th>Zero freqs (%)</th>
+                    <th>Valid NLL (↓)</th>
+                    <th>Valid Accuracy (%) (↑)</th>
+                </tr>
+                <tr>
+                    <td style="text-align: left">SinCos</td>
+                    <td class="bigcol"></td>
+                    <td>1.0</td>
+                    <td>100.0</td>
+                    <td>0</td>
+                    <td>0.8444</td>
+                    <td>78.71</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Axial RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0</td>
+                    <td>0.8034</td>
+                    <td>79.58</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Mixed RoPE</td>
+                    <td class="bigcol">✓</td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0</td>
+                    <td>0.8025</td>
+                    <td>79.73</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Uniform RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0</td>
+                    <td>0.8064</td>
+                    <td>79.67</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">"</td>
+                    <td class="bigcol"></td>
+                    <td></td>
+                    <td></td>
+                    <td>25</td>
+                    <td>0.7979</td>
+                    <td>79.78</td>
+                </tr>
+            </table>
+        </div>
 
         <p>
             I searched over \(\omega_\text{min} \in \{0.2, 0.5, 1.0\}\), and, in
@@ -864,57 +865,59 @@
         </p>
 
         <h4>ImageNet-1K ViT(dim=384, mlp_dim=768, depth=12) / patch 8 @ 90 epochs</h4>
-        <table>
-            <tr>
-                <th>Method</th>
-                <th>Learned</th>
-                <th>\(\omega_\text{min}\)</th>
-                <th>\(\omega_\text{max}\)</th>
-                <th>Zero freqs (%)</th>
-                <th>Valid NLL (↓)</th>
-                <th>Valid Accuracy (%) (↑)</th>
-            </tr>
-            <tr>
-                <td style="text-align: left">SinCos</td>
-                <td class="bigcol"></td>
-                <td>1.0</td>
-                <td>100.0</td>
-                <td>0</td>
-                <td>0.7834</td>
-                <td>79.46</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Axial RoPE</td>
-                <td class="bigcol"></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>[in progress...] </td>
-                <!-- <td>0.2</td>
+        <div class="xscroll">
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Learned</th>
+                    <th>\(\omega_\text{min}\)</th>
+                    <th>\(\omega_\text{max}\)</th>
+                    <th>Zero freqs (%)</th>
+                    <th>Valid NLL (↓)</th>
+                    <th>Valid Accuracy (%) (↑)</th>
+                </tr>
+                <tr>
+                    <td style="text-align: left">SinCos</td>
+                    <td class="bigcol"></td>
+                    <td>1.0</td>
+                    <td>100.0</td>
+                    <td>0</td>
+                    <td>0.7834</td>
+                    <td>79.46</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Axial RoPE</td>
+                    <td class="bigcol"></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>[in progress...] </td>
+                    <!-- <td>0.2</td>
                 <td>20.0</td>
                 <td>0</td>
                 <td>0.8034</td>
                 <td>79.58</td> -->
-            </tr>
-            <tr>
-                <td style="text-align: left">Mixed RoPE</td>
-                <td class="bigcol">✓</td>
-                <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.7455</td>
-                <td>80.26</td>
-            </tr>
-            <tr>
-                <td style="text-align: left">Uniform RoPE</td>
-                <td class="bigcol"></td>
-                <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.7456</td>
-                <td>80.42</td>
-            </tr>
-        </table>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Mixed RoPE</td>
+                    <td class="bigcol">✓</td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0</td>
+                    <td>0.7455</td>
+                    <td>80.26</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">Uniform RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0</td>
+                    <td>0.7456</td>
+                    <td>80.42</td>
+                </tr>
+            </table>
+        </div>
 
         <h2>Discussion</h2>
         <p>
@@ -1086,13 +1089,6 @@ class UniformRoPENd(nn.Module):
         return output_NLhd.type_as(input_NLhd)</code></pre>
             <div class="codecaption">
                 This implementation takes the token positions as an additional input.
-                <br><br>Dimension key:
-                <br><code class="shazeer">N:</code> batch size
-                <br><code class="shazeer">L:</code> number of tokens per sample
-                <br><code class="shazeer">P:</code> number of positional dimensions
-                <br><code class="shazeer">h:</code> number of attention heads
-                <br><code class="shazeer">d:</code> head dimensionality
-                <br><code class="shazeer">F:</code> num_freqs == d // 2
             </div>
         </figure>
 

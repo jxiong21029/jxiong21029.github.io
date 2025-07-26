@@ -157,28 +157,48 @@ function computeAndRender() {
     drawHeatmap(currentData, p.N);
 }
 
-function linkControls(name) {
+function linkControls(name, isLog = false, vmin = null, vmax = null, invstep = null) {
     const range = document.getElementById(`${name}_range`);
     const number = document.getElementById(name);
-    function sync(from, to) {
-        to.value = from.value;
-        computeAndRender();
-    }
+
     range.addEventListener("input", () => {
         if (name === "phi_spacing") document.getElementById("axial_directions").checked = false;
-        sync(range, number);
+        if (isLog) {
+            const logvmin = Math.log(vmin);
+            const logvmax = Math.log(vmax);
+            const t = range.value / range.max;
+            const logv = logvmin + t * (logvmax - logvmin);
+            number.value = Math.round(Math.exp(logv) * invstep) / invstep;
+        } else number.value = range.value;
+        computeAndRender();
     });
-    number.addEventListener("change", () => {
+
+    function syncRangeToNumber() {
         if (name === "phi_spacing") document.getElementById("axial_directions").checked = false;
         const min = parseFloat(number.min);
         const max = parseFloat(number.max);
         if (number.value < min) number.value = min;
         if (number.value > max) number.value = max;
-        sync(number, range);
-    });
+        if (isLog) {
+            const logvmin = Math.log(vmin);
+            const logvmax = Math.log(vmax);
+            const logv = Math.log(number.value);
+            const t = (logv - logvmin) / (logvmax - logvmin);
+            range.value = t * range.max;
+        } else range.value = number.value;
+        computeAndRender();
+    }
+    number.addEventListener("change", syncRangeToNumber);
+
+    syncRangeToNumber();
 }
 
-["N", "min_freq", "max_freq", "n_freqs", "phi_spacing"].forEach(linkControls);
+// ["N", "min_freq", "max_freq", "n_freqs", "phi_spacing"].forEach(linkControls);
+linkControls("N");
+linkControls("min_freq", true, 0.01, 50.0, 100);
+linkControls("max_freq", true, 1.0, 1000, 10);
+linkControls("n_freqs");
+linkControls("phi_spacing");
 
 document.getElementById("axial_directions").addEventListener("change", computeAndRender);
 

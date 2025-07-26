@@ -95,7 +95,7 @@
             /* width: 16em; */
             /* flex: 1 0 auto; */
             flex: 1 0 auto;
-            max-width: 300px;
+            width: 300px;
             color: gray;
             font-family: sans-serif;
             font-size: 16px;
@@ -243,11 +243,11 @@
                     <input id="N" type="number" min="9" max="99" step="2" value="51" />
                 </label>
                 <label>min_freq
-                    <input id="min_freq_range" type="range" min="0.1" max="50.0" step="0.01" value="1" />
-                    <input id="min_freq" type="number" min="0.1" max="50.0" step="0.01" value="1" />
+                    <input id="min_freq_range" type="range" min="0.0" max="100.0" step="0.01" />
+                    <input id="min_freq" type="number" min="0.01" max="50.0" step="0.01" value="1" />
                 </label>
                 <label>max_freq
-                    <input id="max_freq_range" type="range" min="1.0" max="1000" step="0.1" value="64" />
+                    <input id="max_freq_range" type="range" min="0.0" max="100.0" step="0.01" />
                     <input id="max_freq" type="number" min="1.0" max="1000" step="0.1" value="64" />
                 </label>
                 <label>n_freqs
@@ -273,9 +273,9 @@
                 positions without also attending to tokens with similar keys in
                 the same row or column. <br><br>
                 Instead, by uniformly varying the directions along which distance is
-                computed, RoPE induces attention maps that can be arbitrarily
-                concentrated, with scores that decrease smoothly with increasing L2
-                distance.
+                computed, RoPE can induce attention maps that can be arbitrarily
+                concentrated, with scores that decrease smoothly with increasing
+                Euclidean distance.
             </figcaption>
         </figure>
 
@@ -333,15 +333,17 @@
         </div>
         <p class="aside">
             The composition of independent rotations on orthogonal 2d planes is itself
-            just a higher-dimensional rotation, so RoPE can be thought of as essentially
-            doing a large rotation on the vector as a whole.
+            just a higher-dimensional rotation (see this <a
+                href="https://planetmath.org/decompositionoforthogonaloperatorsasrotationsandreflections">article</a>
+            or this <a href="https://www.appletonaudio.com/blog/2023/high-dimension-rotation-matrices/">post</a>),
+            so RoPE is implementing a single rotation on the vector as a whole.
 
             Typically, a range of log-spaced frequency magnitudes are selected, where
             the \(i\)th frequency magnitude is \[\omega_i = \omega_\text{min} \cdot
-            (\omega_\text{max} / \omega_\text{min}) ^{i / (D/2 - 1)}.\]
+            (\omega_\text{max} / \omega_\text{min}) ^{\frac{i}{D/2 - 1}}.\]
 
-            Intuitively, including a wide range of frequencies enables queries which are
-            more or less specific about position. For example, a query vector restricted
+            Intuitively, including a wide range of frequencies enables querying
+            positions with varying specificity. For example, a query vector restricted
             to the dimensions with lower frequencies is effectively like using a RoPE
             with a slower rate of rotation, increasing the range of positions targeted
             by the query.
@@ -350,10 +352,10 @@
         <p>
             RoPE is applied to both the queries and the keys, making it encode only
             relative positional information (as rotating two vectors by the same angle
-            doesn't affect their inner product). In theory, attending to a specific
-            (key, relative position) pair is possible by simply setting the query to a
-            large vector in the direction of that key, rotated by the angle
-            corresponding to that relative position.
+            doesn't affect their inner product). Attending to a specific (key, relative
+            position) pair is possible by setting the query to a large vector in the
+            direction of that key, rotated by the angle corresponding to that relative
+            position.
         </p>
 
         <figure>
@@ -363,12 +365,12 @@
             <div class="figcontrols">
                 <label>
                     <span>min_freq (\(\omega_\text{min}\))</span>
-                    <input type="range" id="minFreq" min="0.0001" max="10" value="0.1" step="0.0001">
+                    <input type="range" id="minFreq" min="0.0" max="100.0" step="0.1">
                     <input type="number" id="minFreqVal" value="0.1" step="0.0001">
                 </label>
                 <label>
                     <span>max_freq (\(\omega_\text{max}\))</span>
-                    <input type="range" id="maxFreq" min="1" max="1000" value="100" step="1">
+                    <input type="range" id="maxFreq" min="0.0" max="100.0" step="0.1">
                     <input type="number" id="maxFreqVal" value="100" step="1">
 
                 </label>
@@ -404,10 +406,7 @@
             hurting expressivity. Increasing the distance between \(\omega_\text{min}\)
             and \(\omega_\text{max}\) enables a wide range of specificities but reduces
             the number of query/key dimensions available for the model to use for any
-            particular level of specificity. From my experience, it seems that
-            performance is, fortunately, not particularly sensitive to the values of
-            \(\omega_\text{min}\) and \(\omega_\text{max}\) in general, as long as
-            they're around right order of magnitude.
+            particular level of specificity.
         </p>
 
         <h2>Extensions to 2 or more dimensions</h2>
@@ -415,22 +414,21 @@
         <p>
             The simplest extension of RoPE to 2 dimensions, as well as the most common
             form of RoPE used in vision transformer (ViT) implementations today, is
-            called axial RoPE. Essentially, axial RoPE just applies 1d RoPE twice:
-            rotating the first \(D/2\) dimensions of each query and key vector according
-            to x-position, and the remaining \(D/2\) dimensions according to
-            y-position.
+            called axial RoPE. Axial RoPE applies 1d RoPE twice: rotating the first
+            \(D/2\) dimensions of each query and key vector according to x-position, and
+            the remaining \(D/2\) dimensions according to y-position.
         </p>
 
         <p>
             Similar to 1d RoPE, 2d axial RoPE also encodes purely relative positional
             information. However, unlike 1d RoPE, 2d axial RoPE does not enable
-            attending solely to specific (key, relative position) pairs. In particular,
-            the first half of a query, which rotates according to x-position,
-            contributes the same amount to the attention score for a key regardless of
-            the key's y-position. Similarly, the second half of a query contributes the
-            same amount regardless of x-position. Attending to a token means necessarily
-            attending to any tokens with similar keys located in the same row or column,
-            with a cosine alignment at least half as large.
+            attending solely to specific (key, relative position) pairs. The first half
+            of a query, which rotates according to x-position, contributes the same
+            amount to the attention score for a key regardless of the key's y-position.
+            Similarly, the second half of a query contributes the same amount regardless
+            of x-position. Attending to a token necessarily means attending to any
+            tokens with similar keys located in the same row or column, with a cosine
+            alignment at least half as large, roughly speaking.
         </p>
 
         <p>
@@ -453,16 +451,15 @@
         <p>
             At initialization, unit directions \(\{\mathbf{u}_i\}_{i=1}^{D/2},
             \mathbf{u}_i \in \mathbb{R}^2, \|\mathbf{u}_i\|_2 = 1\) are selected for
-            each of the \(D/2\) dimension pairs. During inference, to determine the
-            angle of rotation for the \(i\)th pair (for 1d RoPE, this angle was just the
-            scalar frequency \(\omega_i\) times the token's 1d coordinate position), the
-            token's 2d position is projected to \(\mathbf{u}_i\) to obtain a scalar
-            inner product before being multiplied by \(\omega_i\) as before.
+            each of the \(D/2\) dimension pairs. During inference, the angle of rotation
+            for the \(i\)th pair is given by \(\omega_i\) times the inner product of the
+            token's 2d position with \(\mathbf{u}_i\) (whereas for 1d RoPE, this angle
+            was just \(\omega_i\) times the token's 1d coordinate position).
         </p>
 
         <p class="aside">
-            To be precise, the general RoPE operation in \(N\) dimensions can be written
-            as
+            To be precise, the general N-dimensional RoPE for positions \(\mathbf{t} \in
+            \mathbb R^N\) can be written as
         </p>
         <div class="aside xscroll">
             \[
@@ -486,8 +483,8 @@
             \]
         </div>
         <p class="aside">
-            This includes axial RoPE as a special case when
-            \(\{\mathbf{u}_i\}_{i=1}^{D/2}\) are in the standard basis.
+            This includes axial RoPE as a special case where each \(\mathbf{u}_i\) is in
+            the standard basis.
         </p>
 
         <p>
@@ -536,8 +533,8 @@
             vectors from the unit circle, then treating the frequency vectors
             \(\mathbf{f}_i = \omega_i \mathbf{u}_i\) as learnable parameters. However,
             it's unclear a priori whether learnable frequency vectors are actually
-            beneficial, especially if the frequencies are already selected in such a way
-            that it's already possible to query unique positions at initialization.
+            beneficial, especially if the frequencies are selected in such a way that
+            it's already possible to query unique positions at initialization.
         </p>
         <p class="aside">
             Intuitively, typical neural network parameters, e.g. the weights of a linear
@@ -546,8 +543,8 @@
             similar to that training input.
 
             In contrast, changes to the frequency vectors of RoPE will nontrivially modify the
-            attention scores between almost all query-key pairs, which perhaps makes
-            these frequencies less amenable to gradient optimization.
+            attention scores between almost all query-key pairs, which could make these
+            frequencies less amenable to gradient optimization.
         </p>
 
         <p>
@@ -562,7 +559,7 @@
                 approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
             will be distributed uniformly. A good option is \(\Delta\phi = 2\pi /
             \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio (kudos
-            to Kevin Yin @ad8e for the suggestion).
+            to Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for the suggestion).
         </p>
 
         <p>
@@ -601,13 +598,8 @@
 
         <ul>
             <li>
-                Learned absolute positional embeddings (APE)
-                <ul>
-                    <li class="note">
-                        from the original ViT paper (<a href="https://arxiv.org/abs/2010.11929">Dosovitskiy et al.
-                            2020</a>).
-                    </li>
-                </ul>
+                Learned absolute positional embeddings (APE, e.g. <a href="https://arxiv.org/abs/2010.11929">Dosovitskiy
+                    et al. 2020</a>)
             </li>
             <li>
                 Fixed sinusoidal positional embeddings (SinCos)
@@ -619,8 +611,7 @@
                         <a href="https://arxiv.org/abs/2205.01580">Beyer et al. 2022</a>)
                     </li>
                     <li class="note">
-                        similar to the positional
-                        embedding from the original
+                        similar to the positional embedding from the original
                         transformer paper
                         (<a href="https://arxiv.org/abs/1706.03762">Vaswani et al. 2017</a>),
                         but with one half derived from x-positions and the other half
@@ -640,7 +631,7 @@
                 <ul>
                     <li class="note">a rotary positional embedding scheme
                         where the rotation is parameterized by the matrix exponential of
-                        the weighted sum of learnable skew-symmetric weights, with
+                        the weighted sum of learnable skew-symmetric matrices, with
                         weights equal to token position</li>
                 </ul>
             </li>
@@ -656,7 +647,7 @@
             CIFAR10. I searched over \(\omega_\text{min} \in \{0.5, 1.0\}\) with
             \(\omega_\text{max} = 100 \cdot \omega_\text{min}\). Below, I'm reporting
             the best validation negative log-likelihood (NLL) and accuracy, mean ± std
-            over 2 seeds, for each approach. See hyperparameters <a href="#cifar10_hyperparams">here</a>. See
+            over 2 seeds, for each approach. See hyperparameters <a href="#cifar10_hyperparams">here</a> and
             code <a
                 href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/cifar_classification.py">here</a>.
 
@@ -762,7 +753,11 @@
             but after adjusting the frequencies, mixed RoPE outperformed axial RoPE and
             did about as well as uniform RoPE. During hyperparam tuning, axial RoPE was
             the only approach which benefited from a frequency range of (0.5-50) rather
-            than (1.0-100.0). Uniform RoPE had the best NLL.
+            than (1.0-100.0) on CIFAR10. LieRE performed slightly better than axial
+            RoPE when LieRE's skew symmetric parameters were not shared between layers
+            or heads, though this resulted in high memory usage in my implementation
+            compared to the other approaches, and still underperformed compared to mixed
+            or uniform RoPE. Uniform RoPE had the best NLL.
         </p>
 
         <h3>ImageNet-1K</h3>
@@ -772,13 +767,14 @@
             epochs. I broadly used the same data augmentation and preprocessing scheme
             as <a href="https://arxiv.org/abs/2205.01580">Beyer et al. 2022</a>,
             training at 224x224 with inception cropping and a small amount of
-            RandAugment and MixUp, though with the same architecture and optimizer setup
-            as the CIFAR10 experiments above.
+            <a href="https://arxiv.org/abs/1909.13719">RandAugment</a> and <a
+                href="https://arxiv.org/abs/1710.09412">MixUp</a>, though with the same
+            architecture and optimizer setup as the CIFAR10 experiments above.
 
             Due to resource limits, I only compared fixed sinusoidal positional
             embeddings, axial RoPE, mixed RoPE, and uniform RoPE.
 
-            See hyperparameters <a href="#imagenet1k_hyperparams">here</a>. See code <a
+            See hyperparameters <a href="#imagenet1k_hyperparams">here</a> and code <a
                 href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/imagenet_classification.py">here</a>.
         </p>
 
@@ -790,7 +786,7 @@
                     <th>Learned</th>
                     <th>\(\omega_\text{min}\)</th>
                     <th>\(\omega_\text{max}\)</th>
-                    <th>Zero freqs (%)</th>
+                    <th>Zero freqs</th>
                     <th>Valid NLL (↓)</th>
                     <th>Valid Accuracy (%) (↑)</th>
                 </tr>
@@ -799,7 +795,7 @@
                     <td class="bigcol"></td>
                     <td>1.0</td>
                     <td>100.0</td>
-                    <td>0</td>
+                    <td>N/A</td>
                     <td>0.8444</td>
                     <td>78.71</td>
                 </tr>
@@ -808,16 +804,25 @@
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
-                    <td>0</td>
+                    <td>0 / 16</td>
                     <td>0.8034</td>
                     <td>79.58</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">"</td>
+                    <td class="bigcol"></td>
+                    <td>"</td>
+                    <td>"</td>
+                    <td>8 / 16</td>
+                    <td>0.8055</td>
+                    <td>79.61</td>
                 </tr>
                 <tr>
                     <td style="text-align: left">Mixed RoPE</td>
                     <td class="bigcol">✓</td>
                     <td>0.2</td>
                     <td>20.0</td>
-                    <td>0</td>
+                    <td>N/A</td>
                     <td>0.8025</td>
                     <td>79.73</td>
                 </tr>
@@ -826,18 +831,27 @@
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
-                    <td>0</td>
+                    <td>0 / 32</td>
                     <td>0.8064</td>
                     <td>79.67</td>
                 </tr>
                 <tr>
                     <td style="text-align: left">"</td>
                     <td class="bigcol"></td>
-                    <td></td>
-                    <td></td>
-                    <td>25</td>
+                    <td>"</td>
+                    <td>"</td>
+                    <td>8 / 32</td>
                     <td>0.7979</td>
                     <td>79.78</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left">"</td>
+                    <td class="bigcol"></td>
+                    <td>"</td>
+                    <td>"</td>
+                    <td>16 / 32</td>
+                    <td>0.8002</td>
+                    <td>79.68</td>
                 </tr>
             </table>
         </div>
@@ -845,23 +859,108 @@
         <p>
             I searched over \(\omega_\text{min} \in \{0.2, 0.5, 1.0\}\), and, in
             contrast to CIFAR10, I found that lower frequency magnitudes (0.2-20.0)
-            performed better for the RoPE approaches on ImageNet. I found that axial
-            RoPE, mixed RoPE, and uniform RoPE had about the same performance on
-            ImageNet, with Mixed RoPE at a slight advantage.
+            performed better for the RoPE approaches on ImageNet. In my initial runs,
+            axial RoPE, mixed RoPE, and uniform RoPE performed about the same, with
+            mixed RoPE at a slight advantage.
 
-            From analyzing the learned frequencies of Mixed RoPE, I found that a good
+            From analyzing the learned frequencies of mixed RoPE, I found that a good
             portion of the learned frequencies decreased to almost zero during training.
             Based on <a href="https://github.com/KellerJordan/modded-nanogpt">modded-nanogpt</a> and
             <a href="https://arxiv.org/abs/2410.06205">Barbero et al. 2024</a>,
-            I set a fraction (p=0.25) of the frequencies of Uniform RoPE to zero and
-            found that it outperformed mixed RoPE by a slim margin in this case.
+            Setting 8 / 32 of the frequencies of uniform RoPE to zero outperformed mixed
+            RoPE by a slim margin. (Here, 8 / 32 zero freqs means that 8 of the 32
+            unique frequency magnitudes were set to zero; axial RoPE repeats the
+            frequency magnitudes for x and y, so there are only 16 unique frequency
+            magnitudes total.)
         </p>
 
         <p>
-            During later experiments, I also found that thinner vision transformer
-            baselines (dim=384, mlp_dim=768) with smaller 8x8 patches and the same
-            depth=12 (due to increased # of patches, approximately equivalent in FLOPs
-            to B/16) resulted in improved performance across the board:
+            Here, I evaluate how well each method generalizes to different resolutions
+            at inference time. In other words, given models were trained at 224x224
+            only, to evaluate at a higher resolution (e.g. 384x384) the positions
+            of each patch are scaled to still span [-1.0, 1.0] (so adjacent patches have
+            coordinates which are closer together). I also tried scaling the temperature
+            of the softmax to account for the increased token count (like e.g. <a
+                href="https://arxiv.org/abs/2501.19399">here</a>), using
+            a temperature of
+            \(\log(\text{new_resolution}^2 / p^2) / \log (224^2 / p^2)\)
+            in this case.
+        </p>
+
+        <h4>ViT B/16 resolution generalization: validation accuracies (%) (vs in-dist @ 224x224)</h4>
+        <div class="xscroll">
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Learned</th>
+                    <th>\(\omega_\text{min}\)</th>
+                    <th>\(\omega_\text{max}\)</th>
+                    <th>Zero freqs</th>
+                    <th>224x224 (in-dist)</th>
+                    <th>384x384</th>
+                    <th>384x384 w/ temp</th>
+                    <th>512x512 w/ temp</th>
+                </tr>
+                <tr>
+                    <td>SinCos</td>
+                    <td class="bigcol"></td>
+                    <td>1.0</td>
+                    <td>100.0</td>
+                    <td>N/A</td>
+                    <td>78.71</td>
+                    <td>75.12 (-2.88)</td>
+                    <td>77.29 (-1.42)</td>
+                    <td>74.95 (-3.76)</td>
+                </tr>
+                <tr>
+                    <td>Axial RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0 / 16</td>
+                    <td>79.58</td>
+                    <td>78.31 (-1.27)</td>
+                    <td>79.57 (-0.01)</td>
+                    <td>77.18 (-2.40)</td>
+                </tr>
+                <tr>
+                    <td>Mixed RoPE</td>
+                    <td class="bigcol">✓</td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>N/A</td>
+                    <td>79.73</td>
+                    <td>78.61 (-1.12)</td>
+                    <td>79.83 (+0.10)</td>
+                    <td>77.55 (-2.18)</td>
+                </tr>
+                <tr>
+                    <td>Uniform RoPE</td>
+                    <td class="bigcol"></td>
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>8 / 32</td>
+                    <td>79.78</td>
+                    <td>79.19 (-0.59)</td>
+                    <td>80.41 (+0.63)</td>
+                    <td>79.15 (-0.63)</td>
+                </tr>
+            </table>
+        </div>
+
+        <p>
+            Axial RoPE generalized better than fixed sinuisoidal positional embeddings,
+            and mixed RoPE generalized better than axial. Surprisingly, uniform RoPE
+            generalized better than mixed RoPE, and both mixed RoPE and uniform RoPE
+            actually performed better at 384x384 than the training resolution of 224x224
+            when combined with temperature scaling.
+        </p>
+
+        <p>
+            As a sidenote, I found that thinner vision transformers (dim=384,
+            mlp_dim=768, 15M params) with smaller 8x8 patches and the same depth=12 (due
+            to increased # of patches, approximately equivalent in FLOPs to B/16)
+            resulted in improved performance across the board:
         </p>
 
         <h4>ImageNet-1K ViT(dim=384, mlp_dim=768, depth=12) / patch 8 @ 90 epochs</h4>
@@ -872,7 +971,6 @@
                     <th>Learned</th>
                     <th>\(\omega_\text{min}\)</th>
                     <th>\(\omega_\text{max}\)</th>
-                    <th>Zero freqs (%)</th>
                     <th>Valid NLL (↓)</th>
                     <th>Valid Accuracy (%) (↑)</th>
                 </tr>
@@ -881,29 +979,22 @@
                     <td class="bigcol"></td>
                     <td>1.0</td>
                     <td>100.0</td>
-                    <td>0</td>
                     <td>0.7834</td>
                     <td>79.46</td>
                 </tr>
                 <tr>
                     <td style="text-align: left">Axial RoPE</td>
                     <td class="bigcol"></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>[in progress...] </td>
-                    <!-- <td>0.2</td>
-                <td>20.0</td>
-                <td>0</td>
-                <td>0.8034</td>
-                <td>79.58</td> -->
+                    <td>0.2</td>
+                    <td>20.0</td>
+                    <td>0.7393</td>
+                    <td>80.48</td>
                 </tr>
                 <tr>
                     <td style="text-align: left">Mixed RoPE</td>
                     <td class="bigcol">✓</td>
                     <td>0.2</td>
                     <td>20.0</td>
-                    <td>0</td>
                     <td>0.7455</td>
                     <td>80.26</td>
                 </tr>
@@ -912,25 +1003,27 @@
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
-                    <td>0</td>
                     <td>0.7456</td>
                     <td>80.42</td>
                 </tr>
             </table>
         </div>
+        <p>
+            (These runs used nonzero initialization frequencies only, though I'd expect
+            better performance with some frequencies set to zero.)
+        </p>
 
         <h2>Discussion</h2>
         <p>
             Overall, it seems like uniform RoPE was consistently among the best
             approaches when the frequency magnitudes were properly tuned. Mixed RoPE,
-            with learnable frequencies, also performed well. However, Mixed RoPE was
-            also fairly sensitive to the initialization magnitude of the frequencies,
-            and can also require tuning the learning rate for the frequencies (which,
-            under my setup, were optimized separately with AdamW rather than Muon). I
-            noticed that if the learning rate for the MixedRoPE frequencies was tuned
-            poorly, learnability could actively hurt performance. I would generally
-            recommend defaulting to uniform RoPE, and performing at least a small amount
-            of tuning on the RoPE frequency magnitudes regardless of the approach used.
+            with learnable frequencies, also performed well. However, mixed RoPE was
+            fairly sensitive to the initialization magnitude of the frequencies, and can
+            also require tuning the learning rate for the frequencies (which, under my
+            setup, were optimized separately with AdamW rather than Muon). I would
+            generally recommend defaulting to uniform RoPE, and performing at least a
+            small amount of tuning on the RoPE frequency magnitudes regardless of the
+            approach used.
         </p>
 
         <h2>Reference implementations</h2>
@@ -1006,8 +1099,10 @@
                 the rotation matrix. <br><br>
 
                 <code>direction_spacing</code> can be set to \(\pi / 2\) to
-                (approximately) emulate axial RoPE, although this will cause the y
-                frequencies to be slightly larger than the x frequencies on average.
+                (approximately) emulate axial RoPE (though this will cause the y
+                frequencies to be slightly larger than the x frequencies on average,
+                since the frequencies are assigned in increasing order, alternating
+                between x and y, and x is assigned first).
             </div>
         </figure>
 
@@ -1088,7 +1183,8 @@ class UniformRoPENd(nn.Module):
         output_NLhd = torch.cat((x_out_NLhF, y_out_NLhF), dim=-1)
         return output_NLhd.type_as(input_NLhd)</code></pre>
             <div class="codecaption">
-                This implementation takes the token positions as an additional input.
+                This implementation takes the token positions as an additional input to
+                forward().
             </div>
         </figure>
 
@@ -1108,8 +1204,9 @@ class UniformRoPENd(nn.Module):
             </li>
             <li>
                 Optimizers: Muon for linear layers. AdamW for per-channel scalings, and,
-                when applicable, the learnable APE or the frequencies for mixed RoPE.
-                Constant learning rate with no warmup and linear cooldown to 0.
+                when applicable, the learnable APE, the frequency vectors for mixed
+                RoPE, or the raw parameters for LieRE. The schedule was constant
+                learning rate with no warmup, followed by linear cooldown to 0.
             </li>
 
             <li>
@@ -1241,8 +1338,9 @@ class UniformRoPENd(nn.Module):
 
         <h2>Acknowledgements</h2>
         <p>
-            Kevin Yin @ad8e for suggesting uniform rotations by \(\pi (1 - \sqrt{5})\).
-            <!-- <a href="https://cgdct.moe/">Stephen Huan</a> for contributing NOTHING -->
+            Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for suggesting uniform
+            rotations by \(\pi (1 - \sqrt{5})\). <a href="https://cgdct.moe/">Stephen
+                Huan</a> for various suggestions.
         </p>
 
         <h2>How to cite</h2>

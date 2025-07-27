@@ -876,10 +876,10 @@
             portion of the learned frequencies decreased to almost zero during training.
             Based on <a href="https://github.com/KellerJordan/modded-nanogpt">modded-nanogpt</a> and
             <a href="https://arxiv.org/abs/2410.06205">Barbero et al. 2024</a>,
-            Setting 8 / 32 of the frequencies of uniform RoPE to zero outperformed mixed
-            RoPE by a slim margin. (Here, 8 / 32 zero freqs means that 8 of the 32
-            unique frequency magnitudes were set to zero; axial RoPE repeats the
-            frequency magnitudes for x and y, so there are only 16 unique frequency
+            I set 8 / 32 of the frequencies of uniform RoPE to zero and it outperformed
+            mixed RoPE by a slim margin. (Here, 8 / 32 means that 8 of the 32 unique
+            frequency magnitudes were set to zero; axial RoPE repeats the
+            frequency magnitudes for x and y, so there were only 16 unique frequency
             magnitudes total.)
         </p>
 

@@ -884,13 +884,13 @@
         </p>
 
         <p>
-            Here, I evaluate how well each method generalizes to different resolutions
-            at inference time. In other words, given models were trained at 224x224
-            only, to evaluate at a higher resolution (e.g. 384x384) the positions
-            of each patch are scaled to still span [-1.0, 1.0] (so adjacent patches have
-            coordinates which are closer together). I also tried scaling the temperature
-            of the softmax to account for the increased token count (like e.g. <a
-                href="https://arxiv.org/abs/2501.19399">here</a>), using
+            Here, I evaluated how well each method generalized to different resolutions
+            at inference time. The models were trained at 224x224 only, and to evaluate
+            at a higher resolution (e.g. 384x384), the positions of each patch were
+            scaled to still span [-1.0, 1.0] (so adjacent patches end up with
+            coordinates which are closer together than before). I also tried scaling the
+            temperature of the softmax to account for the increased token count (like
+            e.g. <a href="https://arxiv.org/abs/2501.19399">here</a>), using
             a temperature of
             \(\log(\text{new_resolution}^2 / p^2) / \log (\text{orig_resolution}^2 / p^2)\)
             in this case, where \(p\) is the patch size.

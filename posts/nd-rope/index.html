@@ -892,8 +892,8 @@
             of the softmax to account for the increased token count (like e.g. <a
                 href="https://arxiv.org/abs/2501.19399">here</a>), using
             a temperature of
-            \(\log(\text{new_resolution}^2 / p^2) / \log (224^2 / p^2)\)
-            in this case.
+            \(\log(\text{new_resolution}^2 / p^2) / \log (\text{orig_resolution}^2 / p^2)\)
+            in this case, where \(p\) is the patch size.
         </p>
 
         <h4>ViT B/16 resolution generalization: validation accuracies (%) (vs in-dist @ 224x224)</h4>

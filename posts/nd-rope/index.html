@@ -564,10 +564,10 @@
             <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
             approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
             will be distributed uniformly. -->
-            A good option is \(\Delta\phi = 2\pi /
-            \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio (kudos
-            to Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for the
-            suggestion).
+            A good option is \(\Delta\phi = 2\pi / \varphi\) where \(\varphi = (1 +
+            \sqrt{5}) / 2\) is the golden ratio. <span style="color: gray">(Edit: in the
+                experiments below, a spacing of \(2 \pi / \varphi\) is used, but \(\pi /
+                \varphi\) may have better performance; kudos to Kevin Yin.)</span>
         </p>
 
         <p>
@@ -1048,7 +1048,7 @@
         min_freq: float,
         max_freq: float,
         p_zero_freqs: float = 0.0,
-        direction_spacing: float = math.pi * (math.sqrt(5) - 1),
+        direction_spacing: float = math.pi * (math.sqrt(5) - 1) / 2,
     ):
         """
         Args:
@@ -1111,7 +1111,10 @@
                 (approximately) emulate axial RoPE (though this will cause the y
                 frequencies to be slightly larger than the x frequencies on average,
                 since the frequencies are assigned in increasing order, alternating
-                between x and y, and x is assigned first).
+                between x and y, and x is assigned first). <br><br>
+
+                Note that <code>direction_spacing</code> was set to \(\pi (\sqrt{5} -
+                1)\) in the experiments above.
             </div>
         </figure>
 

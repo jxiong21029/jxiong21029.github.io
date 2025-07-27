@@ -115,7 +115,8 @@
             font-size: 16px;
         }
 
-        #rope2d {
+        #rope2d,
+        #rope2d_axial {
             display: block;
             image-rendering: pixelated;
             width: 100%;
@@ -237,6 +238,9 @@
             <div class="fig-wrapper">
                 <canvas id="rope2d"></canvas>
             </div>
+            <div class="fig-wrapper">
+                <canvas id="rope2d_axial"></canvas>
+            </div>
             <div class="figcontrols">
                 <label>resolution
                     <input id="N_range" type="range" min="9" max="99" step="2" value="51" />
@@ -258,28 +262,29 @@
                     <input id="phi_spacing_range" type="range" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
                     <input id="phi_spacing" type="number" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
                 </label>
-                <label class="checkbox_label">
+                <!-- <label class="checkbox_label">
                     <input id="axial_directions" type="checkbox" /> axial
-                </label>
+            Typical axial RoPE rotates half of each head's components based on
+            distance along the x-axis, and the other half based on distance along
+            the y-axis, which results in striped artifacts and poorly concentrated
+            attention maps. Queries are unable to attend to tokens at specific
+            positions without also attending to tokens with similar keys in
+            the same row or column. <br><br>
+            Instead, by uniformly varying the directions along which distance is
+            computed, RoPE can induce attention maps that can be arbitrarily
+            concentrated, with scores that decrease smoothly with increasing
+            Euclidean distance.
+                </label> -->
             </div>
 
             <figcaption>
-                <em>Fig. 1</em>. Cosine similarities between a fixed query and rotations
-                of that query over varying positions. <br><br>
-                Typical axial RoPE rotates half of each head's components based on
-                distance along the x-axis, and the other half based on distance along
-                the y-axis, which results in striped artifacts and poorly concentrated
-                attention maps. Queries are unable to attend to tokens at specific
-                positions without also attending to tokens with similar keys in
-                the same row or column. <br><br>
-                Instead, by uniformly varying the directions along which distance is
-                computed, RoPE can induce attention maps that can be arbitrarily
-                concentrated, with scores that decrease smoothly with increasing
-                Euclidean distance.
+                <em>Fig. 1</em>.
+                Left: uniform RoPE, right: axial RoPE. Cosine similarities between a
+                fixed query and rotations of that query over varying positions.
+
             </figcaption>
         </figure>
 
-        <br>
         <h2>RoPE in one dimension</h2>
 
         <p>
@@ -337,25 +342,39 @@
                 href="https://planetmath.org/decompositionoforthogonaloperatorsasrotationsandreflections">article</a>
             or this <a href="https://www.appletonaudio.com/blog/2023/high-dimension-rotation-matrices/">post</a>),
             so RoPE is implementing a single rotation on the vector as a whole.
-
+        </p>
+        <p>
             Typically, a range of log-spaced frequency magnitudes are selected, where
             the \(i\)th frequency magnitude is \[\omega_i = \omega_\text{min} \cdot
             (\omega_\text{max} / \omega_\text{min}) ^{\frac{i}{D/2 - 1}}.\]
 
-            Intuitively, including a wide range of frequencies enables querying
+            <!-- Intuitively, including a wide range of frequencies enables querying
             positions with varying specificity. For example, a query vector restricted
             to the dimensions with lower frequencies is effectively like using a RoPE
             with a slower rate of rotation, increasing the range of positions targeted
-            by the query.
+            by the query. -->
         </p>
 
-        <p>
+        <!-- <p>
             RoPE is applied to both the queries and the keys, making it encode only
             relative positional information (as rotating two vectors by the same angle
             doesn't affect their inner product). Attending to a specific (key, relative
             position) pair is possible by setting the query to a large vector in the
             direction of that key, rotated by the angle corresponding to that relative
             position.
+        </p> -->
+
+        <p>
+            Intuitively, larger values of \(\omega_\text{min}\) and
+            \(\omega_\text{max}\) enforce the prior that queries should be more specific
+            about position, which can improve expressivity but hurt generalizability.
+            Similarly, smaller values of \(\omega_\text{min}\) and \(\omega_\text{max}\)
+            lead to more invariance w.r.t position, improving generalizability but
+            hurting expressivity.
+            <!-- Increasing the distance between \(\omega_\text{min}\)
+            and \(\omega_\text{max}\) enables a wide range of specificities but reduces
+            the number of query/key dimensions available for the model to use for any
+            particular level of specificity. -->
         </p>
 
         <figure>
@@ -397,37 +416,24 @@
             </figcaption>
         </figure>
 
-        <p>
-            Intuitively, larger values of \(\omega_\text{min}\) and
-            \(\omega_\text{max}\) enforce the prior that queries should be more specific
-            about position, which can improve expressivity but hurt generalizability.
-            Similarly, smaller values of \(\omega_\text{min}\) and \(\omega_\text{max}\)
-            lead to more invariance w.r.t position, improving generalizability but
-            hurting expressivity. Increasing the distance between \(\omega_\text{min}\)
-            and \(\omega_\text{max}\) enables a wide range of specificities but reduces
-            the number of query/key dimensions available for the model to use for any
-            particular level of specificity.
-        </p>
-
         <h2>Extensions to 2 or more dimensions</h2>
 
         <p>
-            The simplest extension of RoPE to 2 dimensions, as well as the most common
-            form of RoPE used in vision transformer (ViT) implementations today, is
-            called axial RoPE. Axial RoPE applies 1d RoPE twice: rotating the first
-            \(D/2\) dimensions of each query and key vector according to x-position, and
-            the remaining \(D/2\) dimensions according to y-position.
+            The most common extension of RoPE to 2 dimensions used in vision transformer
+            (ViT) implementations today is called axial RoPE, which applies 1d RoPE
+            twice: rotating the first \(D/2\) dimensions of the query/key according to
+            x-position, and the remaining \(D/2\) dimensions according to y-position.
         </p>
 
         <p>
             Similar to 1d RoPE, 2d axial RoPE also encodes purely relative positional
-            information. However, unlike 1d RoPE, 2d axial RoPE does not enable
-            attending solely to specific (key, relative position) pairs. The first half
-            of a query, which rotates according to x-position, contributes the same
-            amount to the attention score for a key regardless of the key's y-position.
-            Similarly, the second half of a query contributes the same amount regardless
-            of x-position. Attending to a token necessarily means attending to any
-            tokens with similar keys located in the same row or column, with a cosine
+            information. However, 2d axial RoPE does not enable attending solely to
+            specific (key, relative position) pairs. The first half of a query, which
+            rotates according to x-position, contributes the same amount to the
+            attention score for a key regardless of the key's y-position. Similarly,
+            the second half of a query contributes the same amount regardless of
+            x-position. Attending to a token necessarily means attending to any tokens
+            with similar keys located in the same row or column, with a cosine
             alignment at least half as large, roughly speaking.
         </p>
 
@@ -443,9 +449,9 @@
                 href="https://arxiv.org/abs/2412.04431">Infinity</a>, and <a
                 href="https://arxiv.org/abs/2504.13181">Perception Encoder</a>
             are actually still using axial RoPE, based on their official
-            implementations. Maybe this is because it's not obvious from only reading
-            the abstract of Heo et al. that they were introducing a novel approach
-            differing from axial RoPE.
+            implementations. Maybe it wasn't obvious from only reading the abstract of
+            Heo et al. that they were introducing a novel approach differing from axial
+            RoPE.
         </p>
 
         <p>
@@ -553,21 +559,24 @@
             in terms of direction and magnitude. In two dimensions, a simple approach is
             to arrange the frequency vectors for each head in order of increasing
             magnitude, and rotating the \(i\)th vector to an angle of \(i\cdot
-            \Delta\phi\) for some spacing \(\Delta\phi\) between consecutive vectors. As
-            long as \(\Delta\phi\) isn't too small or
+            \Delta\phi\) for some spacing \(\Delta\phi\) between consecutive vectors.
+            <!-- As long as \(\Delta\phi\) isn't too small or
             <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
-                approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
-            will be distributed uniformly. A good option is \(\Delta\phi = 2\pi /
+            approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
+            will be distributed uniformly. -->
+            A good option is \(\Delta\phi = 2\pi /
             \varphi\) where \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio (kudos
-            to Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for the suggestion).
+            to Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for the
+            suggestion).
         </p>
 
         <p>
-            For embedding positions in more than 2 dimensions, one option that works well
-            and is fairly easy to implement is to sample from \(U(0, 1)\) quasi-randomly
-            via Kronecker sequences (the fractional parts of multiples of prime square
-            roots), mapping them to Gaussian samples using the inverse CDF, and then
-            normalizing to length one. An example implementation is provided <a href="#ropend_impl">here</a>.
+            For embedding positions in more than 2 dimensions, one option that works
+            fairly well and is easy to implement is to sample from \(U(0, 1)\)
+            <a
+                href="https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">quasi-randomly</a>,
+            mapping them to Gaussian samples using the inverse CDF, and then normalizing
+            to length one. An example implementation is provided <a href="#ropend_impl">here</a>.
         </p>
         <!-- <div class="figure">
             <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
@@ -1109,26 +1118,20 @@
         <h3 id="ropend_impl">Uniform Nd RoPE (PyTorch)</h3>
 
         <figure>
-            <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
-    """Returns n quasi-random vectors distrib. uniformly on the hypersphere in R^dim"""
-    primes = [2, 3, 5, 7, 11, 13, 17, 19]
-    x = 23
-    while len(primes) < dim:
-        if all(x % p != 0 for p in primes):
-            primes.append(x)
-        x += 2
+            <pre class="code"><code class="language-python">def _phi(m: int) -> float:
+    x = 2.0
+    for _ in range(10):
+        x = (1 + x) ** (1.0 / (m + 1.0))
+    return x
 
-    # Sample from U[0, 1] quasi-randomly using Kronecker sequences
-    z = (
-        torch.arange(1, n + 1).reshape(n, 1)
-        * torch.sqrt(torch.tensor(primes[:dim], dtype=torch.float64))
-    ).fmod(1.0)
 
-    # Map samples from U[0, 1] to N(0, 1)
-    z = math.sqrt(2) * torch.erfinv(2 * z - 1)
-
-    # Project to surface of the unit hypersphere
-    directions = z / z.norm(dim=1, keepdim=True)
+def uniform_directions(n: int, d: int) -> torch.Tensor:
+    g = _phi(d)
+    alpha = (1.0 / g) ** torch.arange(1, d + 1, dtype=torch.float64)
+    i = torch.arange(1, n + 1, dtype=torch.float64).unsqueeze(1)
+    z = torch.fmod(i * alpha, 1.0)
+    directions = torch.erfinv(2.0 * z - 1.0)
+    directions = directions / directions.norm(dim=1, keepdim=True)
     return directions.float()
 
 
@@ -1338,9 +1341,8 @@ class UniformRoPENd(nn.Module):
 
         <h2>Acknowledgements</h2>
         <p>
-            Kevin Yin <a href="https://github.com/ad8e">@ad8e</a> for suggesting uniform
-            rotations by \(\pi (1 - \sqrt{5})\). <a href="https://cgdct.moe/">Stephen
-                Huan</a> for various suggestions.
+            <a href="https://github.com/ad8e">Kevin Yin</a> and <a href="https://cgdct.moe/">Stephen Huan</a> for
+            various suggestions.
         </p>
 
         <h2>How to cite</h2>
@@ -1354,8 +1356,8 @@ class UniformRoPENd(nn.Module):
         </div>
     </div>
 
-
     <script type="module" src="rope_fig1.js"></script>
+    <script type="module" src="rope_fig1_axial.js"></script>
     <script type="module" src="rope_fig2.js"></script>
     <script type="module" src="rope_fig3.js"></script>
     <script>hljs.highlightAll();</script>

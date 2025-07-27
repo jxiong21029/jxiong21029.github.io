@@ -103,7 +103,7 @@ function computeAlignment(N, minFreq, maxFreq, nFreqs, phiSpacing) {
 const color = d3.scaleSequential(d3.interpolateViridis).domain([-1, 1]);
 
 function drawHeatmap(data, N) {
-    const canvas = document.getElementById("rope2d");
+    const canvas = document.getElementById("rope2d_axial");
     canvas.width = N;
     canvas.height = N;
     const ctx = canvas.getContext("2d");
@@ -130,22 +130,22 @@ let lastPhiSpacing = null;
 function readParams() {
     // const axial = document.getElementById("axial_directions").checked;
 
-    if (false) {
-        lastPhiSpacing = document.getElementById("phi_spacing").value;
-        document.getElementById("phi_spacing").value = 1.5708;
-        document.getElementById("phi_spacing_range").value = 1.5708;
-    } else if (lastPhiSpacing !== null) {
-        document.getElementById("phi_spacing").value = lastPhiSpacing;
-        document.getElementById("phi_spacing_range").value = lastPhiSpacing;
-        lastPhiSpacing = null;
-    }
+    // if (true) {
+    //     lastPhiSpacing = document.getElementById("phi_spacing").value;
+    //     document.getElementById("phi_spacing").value = 1.5708;
+    //     document.getElementById("phi_spacing_range").value = 1.5708;
+    // } else if (lastPhiSpacing !== null) {
+    //     document.getElementById("phi_spacing").value = lastPhiSpacing;
+    //     document.getElementById("phi_spacing_range").value = lastPhiSpacing;
+    //     lastPhiSpacing = null;
+    // }
 
     return {
         N: parseInt(document.getElementById("N").value, 10),
         minFreq: parseFloat(document.getElementById("min_freq").value),
         maxFreq: parseFloat(document.getElementById("max_freq").value),
         nFreqs: parseInt(document.getElementById("n_freqs").value, 10),
-        phiSpacing: parseFloat(document.getElementById("phi_spacing").value),
+        phiSpacing: Math.PI / 2,
     };
 }
 
@@ -202,7 +202,7 @@ linkControls("phi_spacing");
 
 // document.getElementById("axial_directions").addEventListener("change", computeAndRender);
 
-const canvas = document.getElementById("rope2d");
+const canvas = document.getElementById("rope2d_axial");
 const tooltip = d3.select("#tooltip");
 canvas.addEventListener("mousemove", (e) => {
     if (!currentData) return;

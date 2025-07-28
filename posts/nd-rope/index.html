@@ -554,25 +554,32 @@
         </p>
 
         <p>
-            If these frequency vectors are kept frozen instead, then we would like to
-            initialize them deterministically, while still distributing them uniformly
-            in terms of direction and magnitude. In two dimensions, a simple approach is
-            to arrange the frequency vectors for each head in order of increasing
-            magnitude, and rotating the \(i\)th vector to an angle of \(i\cdot
-            \Delta\phi\) for some spacing \(\Delta\phi\) between consecutive vectors.
+            If these frequency vectors are kept frozen instead, then ideally we would
+            want to initialize them in a more principled, deterministic fashion. In the
+            initial discussion on the EleutherAI discord,
+            <a href="https://github.com/ad8e">Kevin Yin</a> suggested arranging the
+            frequency vectors for each head in order of increasing magnitude, and
+            rotating the \(i\)th vector to an angle of \(i\cdot 2\pi / \varphi\) where
+            \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio, resulting in uniformly
+            distributed frequency vectors.
+            <!-- <span style="color: gray"> -->
+            (This is the approach used in the experiments below, though, as Kevin
+            later pointed out, rotating by \(i \cdot \pi / \varphi\) is likely to
+            perform better.)
+            <!-- </span> -->
+            <!-- <sup id="footnote1ref"><a href="#footnote1">[1]</a></sup> -->
+
             <!-- As long as \(\Delta\phi\) isn't too small or
             <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
             approximated</a> as a rational fraction of \(2\pi\), the resulting vectors
             will be distributed uniformly. -->
-            A good option is \(\Delta\phi = 2\pi / \varphi\) where \(\varphi = (1 +
-            \sqrt{5}) / 2\) is the golden ratio. <span style="color: gray">(Edit: in the
-                experiments below, a spacing of \(2 \pi / \varphi\) is used, but \(\pi /
-                \varphi\) may have better performance; kudos to Kevin Yin.)</span>
+            <!-- A good option is \(\Delta\phi = 2\pi / \varphi\) where \(\varphi = (1 +
+            \sqrt{5}) / 2\) is the golden ratio. -->
         </p>
 
         <p>
-            For embedding positions in more than 2 dimensions, one option that works
-            fairly well and is easy to implement is to sample from \(U(0, 1)\)
+            For embedding positions in more than 2 dimensions, one option that is easy
+            to implement and works well enough is to sample from \(U(0, 1)\)
             <a
                 href="https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">quasi-randomly</a>,
             mapping them to Gaussian samples using the inverse CDF, and then normalizing
@@ -892,7 +899,7 @@
             temperature of the softmax to account for the increased token count (like
             e.g. <a href="https://arxiv.org/abs/2501.19399">here</a>), using
             a temperature of
-            \(\log(\text{new_resolution}^2 / p^2) / \log (\text{orig_resolution}^2 / p^2)\)
+            \(\log(\text{new_res}^2 / p^2) / \log (\text{old_res}^2 / p^2)\)
             in this case, where \(p\) is the patch size.
         </p>
 

@@ -562,12 +562,14 @@
             rotating the \(i\)th vector to an angle of \(i\cdot 2\pi / \varphi\) where
             \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio, resulting in uniformly
             distributed frequency vectors.
-            <!-- <span style="color: gray"> -->
-            (This is the approach used in the experiments below, though, as Kevin
+            This is the approach used in the experiments below, though, as Kevin
             later pointed out, rotating by \(i \cdot \pi / \varphi\) is likely to
-            perform better.)
-            <!-- </span> -->
-            <!-- <sup id="footnote1ref"><a href="#footnote1">[1]</a></sup> -->
+            perform better.
+            <span style="color: gray">
+                (edit: For a proper explanation about <em>why</em> this works well,
+                check out Kevin's <a href="https://research.novelai.net/rope/">blog
+                    post</a>.)
+            </span>
 
             <!-- As long as \(\Delta\phi\) isn't too small or
             <a href="https://en.wikipedia.org/wiki/Diophantine_approximation">well
@@ -584,6 +586,11 @@
                 href="https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">quasi-randomly</a>,
             mapping them to Gaussian samples using the inverse CDF, and then normalizing
             to length one. An example implementation is provided <a href="#ropend_impl">here</a>.
+            <span style="color: gray">
+                (edit: nor wrote a great <a href="https://nor-blog.pages.dev/posts/2025-07-28-deriving-rope/">blog
+                    post</a> discussing better ways to select frequency directions in >2
+                dimensions.)
+            </span>
         </p>
         <!-- <div class="figure">
             <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
@@ -969,7 +976,7 @@
             and mixed RoPE generalized better than axial. Surprisingly, uniform RoPE
             generalized better than mixed RoPE, and both mixed RoPE and uniform RoPE
             actually had higher validation accuracy at 384x384 when combined with
-            temperature scaling than it had at the training resolution of 224x224.
+            temperature scaling than they had at the training resolution of 224x224.
         </p>
 
         <p>

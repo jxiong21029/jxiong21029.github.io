@@ -1121,14 +1121,13 @@
                 This implementation assumes a fixed input height/width and precomputes
                 the rotation matrix. <br><br>
 
-                <code>direction_spacing</code> can be set to \(\pi / 2\) to
-                (approximately) emulate axial RoPE (though this will cause the y
-                frequencies to be slightly larger than the x frequencies on average,
-                since the frequencies are assigned in increasing order, alternating
-                between x and y, and x is assigned first). <br><br>
+                <code>direction_spacing</code> has a default value of \(\pi / \varphi
+                \approx 1.9416\) here, which should be the best performing value, but
+                note that the experiments above mistakenly used a slightly suboptimal
+                value of \(2\pi / \varphi \approx 3.8832\) instead. <br><br>
 
-                Note that <code>direction_spacing</code> was set to \(\pi (\sqrt{5} -
-                1)\) in the experiments above.
+                <code>direction_spacing</code> can be set to \(\pi / 2\) to
+                (approximately) emulate axial RoPE.
             </div>
         </figure>
 

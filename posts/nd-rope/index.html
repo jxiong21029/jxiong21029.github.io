@@ -279,7 +279,7 @@
 
             <figcaption>
                 <em>Fig. 1</em>.
-                Left: uniform RoPE, right: axial RoPE. Cosine similarities between a
+                Left: golden gate RoPE, right: axial RoPE. Cosine similarities between a
                 fixed query and rotations of that query over varying positions.
 
             </figcaption>
@@ -560,15 +560,15 @@
             <a href="https://github.com/ad8e">Kevin Yin</a> suggested arranging the
             frequency vectors for each head in order of increasing magnitude, and
             rotating the \(i\)th vector to an angle of \(i\cdot 2\pi / \varphi\) where
-            \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio, resulting in uniformly
-            distributed frequency vectors.
+            \(\varphi = (1 + \sqrt{5}) / 2\) is the golden ratio.
             This is the approach used in the experiments below, though, as Kevin
             later pointed out, rotating by \(i \cdot \pi / \varphi\) is likely to
             perform better.
             <span style="color: gray">
                 (edit: For a proper explanation about <em>why</em> this works well,
                 check out Kevin's <a href="https://research.novelai.net/rope/">blog
-                    post</a>.)
+                    post</a>. edit 2: renamed uniform RoPE to golden gate RoPE,
+                as suggested by fluffy.)
             </span>
 
             <!-- As long as \(\Delta\phi\) isn't too small or
@@ -581,11 +581,12 @@
 
         <p>
             For embedding positions in more than 2 dimensions, one option that is easy
-            to implement and works well enough is to sample from \(U(0, 1)\)
+            to implement and works well enough is to take samples from \(U(0, 1)\)
             <a
-                href="https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">quasi-randomly</a>,
-            mapping them to Gaussian samples using the inverse CDF, and then normalizing
-            to length one. An example implementation is provided <a href="#ropend_impl">here</a>.
+                href="https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/">quasi-randomly</a>
+            via the generalized golden ratio, mapping them to Gaussian samples using the
+            inverse CDF, and then normalizing to length one. An example implementation
+            is provided <a href="#ropend_impl">here</a>.
             <span style="color: gray">
                 (edit: nor wrote a great <a href="https://nor-blog.pages.dev/posts/2025-07-28-deriving-rope/">blog
                     post</a> discussing better ways to select frequency directions in >2
@@ -659,7 +660,7 @@
                 </ul>
             </li>
             <li>
-                RoPE with frozen, uniformly spaced directions (uniform RoPE)
+                RoPE with frozen directions spaced according to the golden ratio (golden gate RoPE)
             </li>
         </ul>
 
@@ -760,7 +761,7 @@
                 <td>92.25 ± 0.01</td>
             </tr> -->
                 <tr>
-                    <td style="text-align: left">Uniform RoPE</td>
+                    <td style="text-align: left">Golden gate RoPE</td>
                     <td class="bigcol"></td>
                     <td>1.00</td>
                     <td>100.0</td>
@@ -774,13 +775,13 @@
             Both absolute position embedding methods performed poorly. Mixed RoPE
             underperformed when using the frequencies from the official implementation,
             but after adjusting the frequencies, mixed RoPE outperformed axial RoPE and
-            did about as well as uniform RoPE. During hyperparam tuning, axial RoPE was
+            did about as well as golden gate RoPE. During hyperparam tuning, axial RoPE was
             the only approach which benefited from a frequency range of (0.5-50) rather
             than (1.0-100.0) on CIFAR10. LieRE performed slightly better than axial
             RoPE when LieRE's skew symmetric parameters were not shared between layers
             or heads, though this resulted in high memory usage in my implementation
             compared to the other approaches, and still underperformed compared to mixed
-            or uniform RoPE. Uniform RoPE had the best NLL.
+            or golden gate RoPE. Golden gate RoPE had the best NLL.
         </p>
 
         <h3>ImageNet-1K</h3>
@@ -795,7 +796,7 @@
             architecture and optimizer setup as the CIFAR10 experiments above.
 
             Due to resource limits, I only compared fixed sinusoidal positional
-            embeddings, axial RoPE, mixed RoPE, and uniform RoPE.
+            embeddings, axial RoPE, mixed RoPE, and golden gate RoPE.
 
             See hyperparameters <a href="#imagenet1k_hyperparams">here</a> and code <a
                 href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/imagenet_classification.py">here</a>.
@@ -850,7 +851,7 @@
                     <td>79.73</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left">Uniform RoPE</td>
+                    <td style="text-align: left">Golden gate RoPE</td>
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -883,16 +884,16 @@
             I searched over \(\omega_\text{min} \in \{0.2, 0.5, 1.0\}\), and, in
             contrast to CIFAR10, I found that lower frequency magnitudes (0.2-20.0)
             performed better for the RoPE approaches on ImageNet. In my initial runs,
-            axial RoPE, mixed RoPE, and uniform RoPE performed about the same, with
+            axial RoPE, mixed RoPE, and golden gate RoPE performed about the same, with
             mixed RoPE at a slight advantage.
 
             From analyzing the learned frequencies of mixed RoPE, I found that a good
             portion of the learned frequencies decreased to almost zero during training.
             Based on <a href="https://github.com/KellerJordan/modded-nanogpt">modded-nanogpt</a> and
             <a href="https://arxiv.org/abs/2410.06205">Barbero et al. 2024</a>,
-            I set 8 / 32 of the frequencies of uniform RoPE to zero and it outperformed
-            mixed RoPE by a slim margin. (Here, 8 / 32 means that 8 of the 32 unique
-            frequency magnitudes were set to zero; axial RoPE repeats the
+            I set 8 / 32 of the frequencies of golden gate RoPE to zero and it
+            outperformed mixed RoPE by a slim margin. (Here, 8 / 32 means that 8 of the
+            32 unique frequency magnitudes were set to zero; axial RoPE repeats the
             frequency magnitudes for x and y, so there were only 16 unique frequency
             magnitudes total.)
         </p>
@@ -958,7 +959,7 @@
                     <td>77.55 (-2.18)</td>
                 </tr>
                 <tr>
-                    <td>Uniform RoPE</td>
+                    <td>Golden gate RoPE</td>
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -973,8 +974,8 @@
 
         <p>
             Axial RoPE generalized better than fixed sinuisoidal positional embeddings,
-            and mixed RoPE generalized better than axial. Surprisingly, uniform RoPE
-            generalized better than mixed RoPE, and both mixed RoPE and uniform RoPE
+            and mixed RoPE generalized better than axial. Surprisingly, golden gate RoPE
+            generalized better than mixed RoPE, and both mixed RoPE and golden gate RoPE
             actually had higher validation accuracy at 384x384 when combined with
             temperature scaling than they had at the training resolution of 224x224.
         </p>
@@ -1022,7 +1023,7 @@
                     <td>80.26</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left">Uniform RoPE</td>
+                    <td style="text-align: left">Golden gate RoPE</td>
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -1038,22 +1039,22 @@
 
         <h2>Discussion</h2>
         <p>
-            Overall, it seems like uniform RoPE was consistently among the best
+            Overall, it seems like golden gate RoPE was consistently among the best
             approaches when the frequency magnitudes were properly tuned. Mixed RoPE,
             with learnable frequencies, also performed well. However, mixed RoPE was
             fairly sensitive to the initialization magnitude of the frequencies, and can
             also require tuning the learning rate for the frequencies (which, under my
             setup, were optimized separately with AdamW rather than Muon). I would
-            generally recommend defaulting to uniform RoPE, and performing at least a
+            generally recommend defaulting to golden gate RoPE, and performing at least a
             small amount of tuning on the RoPE frequency magnitudes regardless of the
             approach used.
         </p>
 
         <h2>Reference implementations</h2>
-        <h3>Uniform 2d RoPE (PyTorch)</h3>
+        <h3>Golden gate RoPE, 2d (PyTorch)</h3>
 
         <figure>
-            <pre class="code"><code class="language-python">class UniformRoPE2d(nn.Module):
+            <pre class="code"><code class="language-python">class GoldenGateRoPE2d(nn.Module):
     def __init__(
         self,
         image_size: tuple[int, int],
@@ -1131,7 +1132,7 @@
             </div>
         </figure>
 
-        <h3 id="ropend_impl">Uniform Nd RoPE (PyTorch)</h3>
+        <h3 id="ropend_impl">Golden Gate RoPE, Nd (PyTorch)</h3>
 
         <figure>
             <pre class="code"><code class="language-python">def _phi(m: int) -> float:
@@ -1141,7 +1142,7 @@
     return x
 
 
-def uniform_directions(n: int, d: int) -> torch.Tensor:
+def make_directions(n: int, d: int) -> torch.Tensor:
     g = _phi(d)
     alpha = (1.0 / g) ** torch.arange(1, d + 1, dtype=torch.float64)
     i = torch.arange(1, n + 1, dtype=torch.float64).unsqueeze(1)
@@ -1151,7 +1152,7 @@ def uniform_directions(n: int, d: int) -> torch.Tensor:
     return directions.float()
 
 
-class UniformRoPENd(nn.Module):
+class GoldenGateRoPENd(nn.Module):
     def __init__(
         self,
         pos_dim: int,
@@ -1187,7 +1188,7 @@ class UniformRoPENd(nn.Module):
             )
         )
 
-        directions_hFP = uniform_directions(n_heads * n_freqs, pos_dim).reshape(
+        directions_hFP = make_directions(n_heads * n_freqs, pos_dim).reshape(
             n_heads, n_freqs, pos_dim
         )
         self.register_buffer("freqs_hFP", directions_hFP * omega_F.reshape(n_freqs, 1))
@@ -1357,7 +1358,7 @@ class UniformRoPENd(nn.Module):
 
         <h2>Acknowledgements</h2>
         <p>
-            <a href="https://github.com/ad8e">Kevin Yin</a> for suggesting the uniform
+            <a href="https://github.com/ad8e">Kevin Yin</a> for suggesting evenly spaced
             rotations based on the golden ratio, as well as general feedback. <a href="https://cgdct.moe/">Stephen
                 Huan</a> for miscellaneous suggestions.
         </p>

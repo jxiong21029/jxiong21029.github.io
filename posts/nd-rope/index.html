@@ -593,26 +593,6 @@
                 dimensions.)
             </span>
         </p>
-        <!-- <div class="figure">
-            <pre class="code"><code class="language-python">def uniform_directions(n: int, dim: int):
-    # Quasi-random samples from the uniform distribution using Kronecker sequences
-    primes = [2, 3, 5, 7, 11, 13, 17, 19]
-    x = 23
-    while len(primes) < dim:
-        if all(x % p != 0 for p in primes):
-            primes.append(x)
-        x += 2
-    z = (
-        torch.arange(1, n + 1).reshape(n, 1)
-        * torch.sqrt(torch.tensor(primes[:dim], dtype=torch.float64))
-    ).fmod(1.0)
-
-    # Map samples from U[0, 1] to N(0, 1)
-    z = math.sqrt(2) * torch.erfinv(2 * z - 1)
-
-    directions = z / z.norm(dim=1, keepdim=True)
-    return directions.float()</code></pre>
-        </div> -->
 
         <h2>ViT experiments</h2>
 
@@ -1160,6 +1140,7 @@ class GoldenGateRoPENd(nn.Module):
         head_dim: int,
         min_freq: float,
         max_freq: float,
+        p_zero_freqs: float = 0.0,
     ):
         """
         Args:

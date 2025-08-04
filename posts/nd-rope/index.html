@@ -450,8 +450,8 @@
                 href="https://huggingface.co/Qwen/Qwen-Image">Qwen-Image</a>,
             are actually still using axial RoPE, based on their official
             implementations. Maybe it wasn't obvious from only reading the abstract of
-            Heo et al. that they were introducing a novel approach differing from axial
-            RoPE.
+            Heo et al. that the paper was introducing a novel approach differing from
+            axial RoPE.
         </p>
 
         <p>
@@ -567,8 +567,7 @@
             <span style="color: gray">
                 (edit: For a proper explanation about <em>why</em> this works well,
                 check out Kevin's <a href="https://research.novelai.net/rope/">blog
-                    post</a>. edit 2: renamed uniform RoPE to golden gate RoPE,
-                as suggested by fluffy.)
+                    post</a>.)
             </span>
 
             <!-- As long as \(\Delta\phi\) isn't too small or
@@ -641,6 +640,7 @@
             </li>
             <li>
                 RoPE with frozen directions spaced according to the golden ratio (golden gate RoPE)
+                <sup id="footnote_1_ref"><a href="#footnote_1">[1]</a></sup>
             </li>
         </ul>
 
@@ -1339,9 +1339,9 @@ class GoldenGateRoPENd(nn.Module):
 
         <h2>Acknowledgements</h2>
         <p>
-            <a href="https://github.com/ad8e">Kevin Yin</a> for suggesting evenly spaced
-            rotations based on the golden ratio, as well as general feedback. <a href="https://cgdct.moe/">Stephen
-                Huan</a> for miscellaneous suggestions.
+            <a href="https://github.com/ad8e">Kevin Yin</a> for suggesting fixed
+            rotations based on the golden ratio, as well as general feedback.
+            <a href="https://cgdct.moe/">Stephen Huan</a> for general feedback.
         </p>
 
         <h2>How to cite</h2>
@@ -1353,6 +1353,15 @@ class GoldenGateRoPENd(nn.Module):
     url = {https://jerryxio.ng/posts/nd-rope/}
 }</code></pre>
         </div>
+
+        <ol style="color: gray">
+            <li id="footnote_1">
+                In an earlier version of this post, the suggested approach (selecting
+                frequency directions rotated based on the golden ratio) was called
+                uniform RoPE. fluffy on the EleutherAI discord suggested the name
+                'golden gate RoPE'. <a href="#footnote_1_ref">⏎</a>
+            </li>
+        </ol>
     </div>
 
     <script type="module" src="rope_fig1.js"></script>

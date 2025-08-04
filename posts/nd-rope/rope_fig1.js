@@ -233,3 +233,31 @@ canvas.addEventListener("mouseleave", () =>
 );
 
 computeAndRender();
+
+let btn1 = document.getElementById("btn_pi_2");
+btn1.addEventListener("click", () => {
+    let value = Math.PI / 2;
+    value = Math.round(100_000 * value) / 100_000;
+    document.getElementById("phi_spacing_range").value = value;
+    document.getElementById("phi_spacing").value = value;
+    computeAndRender();
+})
+
+let btn2 = document.getElementById("btn_pi_golden");
+let g = (1 + Math.sqrt(5)) / 2;
+btn2.addEventListener("click", () => {
+    let value = Math.PI / g;
+    value = Math.round(100_000 * value) / 100_000;
+    document.getElementById("phi_spacing_range").value = value;
+    document.getElementById("phi_spacing").value = value;
+    computeAndRender();
+})
+
+let btn3 = document.getElementById("btn_2pi_golden");
+btn3.addEventListener("click", () => {
+    let value = 2 * Math.PI / g;
+    value = Math.round(100_000 * value) / 100_000;
+    document.getElementById("phi_spacing_range").value = value;
+    document.getElementById("phi_spacing").value = value;
+    computeAndRender();
+})

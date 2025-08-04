@@ -261,6 +261,11 @@
                 <label>direction_spacing
                     <input id="phi_spacing_range" type="range" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
                     <input id="phi_spacing" type="number" min="0.0" max="6.28319" step="0.00001" value="3.88322" />
+                    <div style="margin-top: 5px">
+                        <button id="btn_pi_2">\(\pi / 2\)</button>
+                        <button id="btn_pi_golden">\(\pi / \varphi\)</button>
+                        <button id="btn_2pi_golden">\(2\pi / \varphi\)</button>
+                    </div>
                 </label>
                 <!-- <label class="checkbox_label">
                     <input id="axial_directions" type="checkbox" /> axial
@@ -455,8 +460,8 @@
         </p>
 
         <p>
-            At initialization, unit directions \(\{\mathbf{u}_i\}_{i=1}^{D/2},
-            \mathbf{u}_i \in \mathbb{R}^2, \|\mathbf{u}_i\|_2 = 1\) are selected for
+            At initialization, unit directions \(\{\mathbf{u}_i\}_{i=1}^{D/2}\),
+            \(\mathbf{u}_i \in \mathbb{R}^2\), \(\|\mathbf{u}_i\|_2 = 1\) are selected for
             each of the \(D/2\) dimension pairs. During inference, the angle of rotation
             for the \(i\)th pair is given by \(\omega_i\) times the inner product of the
             token's 2d position with \(\mathbf{u}_i\) (whereas for 1d RoPE, this angle
@@ -887,7 +892,7 @@
             temperature of the softmax to account for the increased token count (like
             e.g. <a href="https://arxiv.org/abs/2501.19399">here</a>), using
             a temperature of
-            \(\log(\text{new_res}^2 / p^2) / \log (\text{old_res}^2 / p^2)\)
+            \(\log(\text{new_res}^2 / p^2)\) \(/ \log (\text{old_res}^2 / p^2)\)
             in this case, where \(p\) is the patch size.
         </p>
 

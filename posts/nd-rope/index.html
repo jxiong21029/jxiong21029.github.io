@@ -915,7 +915,7 @@
                     <th>512x512 w/ temp</th>
                 </tr>
                 <tr>
-                    <td>SinCos</td>
+                    <td style="text-align: left">SinCos</td>
                     <td class="bigcol"></td>
                     <td>1.0</td>
                     <td>100.0</td>
@@ -926,7 +926,7 @@
                     <td>74.95 (-3.76)</td>
                 </tr>
                 <tr>
-                    <td>Axial RoPE</td>
+                    <td style="text-align: left">Axial RoPE</td>
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -937,7 +937,7 @@
                     <td>77.18 (-2.40)</td>
                 </tr>
                 <tr>
-                    <td>Mixed RoPE</td>
+                    <td style="text-align: left">Mixed RoPE</td>
                     <td class="bigcol">✓</td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -948,7 +948,7 @@
                     <td>77.55 (-2.18)</td>
                 </tr>
                 <tr>
-                    <td>Golden gate RoPE</td>
+                    <td style="text-align: left">Golden gate RoPE</td>
                     <td class="bigcol"></td>
                     <td>0.2</td>
                     <td>20.0</td>
@@ -1034,9 +1034,9 @@
             with learnable frequencies, also performed well. However, mixed RoPE,
             despite being learnable, was still sensitive to the initialization
             magnitudes of the frequencies, and demonstrated poorer generalization to
-            different resolutions. I would recommend defaulting to golden gate RoPE, and
-            performing at least a small amount of tuning on the RoPE frequency
-            magnitudes regardless of the approach used.
+            different resolutions at inference time. I would recommend defaulting to
+            golden gate RoPE, and performing at least a small amount of tuning on the
+            RoPE frequency magnitudes regardless of the approach used.
         </p>
 
         <h2>Reference implementations</h2>

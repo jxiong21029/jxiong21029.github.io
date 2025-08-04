@@ -77,7 +77,7 @@ function computeAlignment(N, minFreq, maxFreq, nFreqs, phiSpacing) {
         phi = f * phiSpacing;
         dx = Math.cos(phi);
         dy = Math.sin(phi);
-        const scale = minFreq * Math.pow(maxFreq / minFreq, nFreqs === 1 ? 0 : f / (nFreqs - 1));
+        const scale = minFreq * Math.pow(maxFreq / minFreq, nFreqs === 1 ? 0 : (f - (f % 2)) / (nFreqs - 2));
         freqs[2 * f] = dx * scale;
         freqs[2 * f + 1] = dy * scale;
     }

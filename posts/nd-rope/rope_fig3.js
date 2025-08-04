@@ -41,7 +41,7 @@ const N = 51;
 const minFreq = 2.0;
 const maxFreq = 64.0;
 const nFreqs = 256;
-const phiSpacing = Math.PI * (Math.sqrt(5) - 1);
+const phiSpacing = Math.PI * (Math.sqrt(5) - 1) / 2;
 
 function computeAlignment(nComponents) {
     const hh = linspace(-1.2, 1.2, N);

@@ -447,17 +447,19 @@
             The main insight is that, rather than rotating any particular dimension pair
             based on only x-position or based on only y-position, the rotations can
             instead be based on the tokens' positions measured along arbitrary 2d
-            directions (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>).
+            directions.
         </p>
         <p class="aside">
-            Although Heo et al. introduced this idea last year, various recent works
-            which cite Heo et al., such as <a href="https://arxiv.org/abs/2408.00714">SAM 2</a>, <a
+            Last year, Heo et al. in their <a href="https://arxiv.org/abs/2403.13298">paper</a> titled "Rotary position
+            embedding for vision transformer" described this idea as part of their
+            proposed 'Mixed RoPE' method. However, it seems like many of the various
+            recent works which cite Heo et al., such as <a href="https://arxiv.org/abs/2408.00714">SAM 2</a>, <a
                 href="https://arxiv.org/abs/2412.04431">Infinity</a>, and <a
                 href="https://huggingface.co/Qwen/Qwen-Image">Qwen-Image</a>,
             are actually still using axial RoPE, based on their official
-            implementations. Maybe it wasn't obvious from only reading the abstract of
-            Heo et al. that the paper was introducing a novel approach differing from
-            axial RoPE.
+            implementations. Maybe this is because it isn't obvious from only reading
+            the abstract of Heo et al. that the paper introduces a novel approach
+            that differs from axial RoPE.
         </p>
 
         <p>
@@ -465,7 +467,7 @@
             \(\mathbf{u}_i \in \mathbb{R}^2\), \(\|\mathbf{u}_i\|_2 = 1\) are selected for
             each of the \(D/2\) dimension pairs. During inference, the angle of rotation
             for the \(i\)th pair is given by the frequency magnitude \(\omega_i\) times
-            the inner product of the token's 2d position with \(\mathbf{u}_i\) (whereas
+            the dot product of the token's 2d position with \(\mathbf{u}_i\) (whereas
             for 1d RoPE, this angle was just \(\omega_i\) times the token's 1d
             coordinate position).
         </p>
@@ -503,8 +505,8 @@
         <p>
             In other words, the \(i\)th dimension pair is rotated by an angle
             proportional to "the position of the token measured according to the
-            direction \(\mathbf{u}_i\)". By spacing out \(\{\mathbf{u}_i\}_{i=1}^{D /
-            2}\) uniformly on the unit circle rather than constraining them to
+            direction \(\mathbf{u}_i\)". By selecting \(\{\mathbf{u}_i\}_{i=1}^{D /
+            2}\) uniformly from the unit circle rather than constraining them to
             axis-aligned directions, it turns out that RoPE can also produce
             concentrated attention maps in 2d!
         </p>
@@ -531,8 +533,8 @@
         </figure>
 
         <p>
-            NOTE: since the sequence lengths relevant for language modeling are much
-            longer than the side length of the patchified inputs for vision
+            NOTE: since the sequence lengths relevant for language modeling are
+            typically much longer than the side length of image inputs for vision
             transformers, the minimum and maximum frequency magnitudes should be
             adjusted to compensate. I recommend using a coordinate system with positions
             normalized to [-1.0, 1.0] and using \(\omega_\text{min}\) between 0.2 and
@@ -633,7 +635,7 @@
                 Axial RoPE
             </li>
             <li>
-                RoPE with learned, randomly initialized frequencies (mixed RoPE, <a
+                RoPE with learned, randomly initialized frequency vectors (mixed RoPE, <a
                     href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>)
             </li>
             <li>
@@ -1029,13 +1031,12 @@
         <p>
             Overall, it seems like golden gate RoPE was consistently among the best
             approaches when the frequency magnitudes were properly tuned. Mixed RoPE,
-            with learnable frequencies, also performed well. However, mixed RoPE was
-            fairly sensitive to the initialization magnitude of the frequencies, and can
-            also require tuning the learning rate for the frequencies (which, under my
-            setup, were optimized separately with AdamW rather than Muon). I would
-            generally recommend defaulting to golden gate RoPE, and performing at least a
-            small amount of tuning on the RoPE frequency magnitudes regardless of the
-            approach used.
+            with learnable frequencies, also performed well. However, mixed RoPE,
+            despite being learnable, was still sensitive to the initialization
+            magnitudes of the frequencies, and demonstrated poorer generalization to
+            different resolutions. I would recommend defaulting to golden gate RoPE, and
+            performing at least a small amount of tuning on the RoPE frequency
+            magnitudes regardless of the approach used.
         </p>
 
         <h2>Reference implementations</h2>
@@ -1366,7 +1367,7 @@ class GoldenGateRoPENd(nn.Module):
             <li id="footnote_1">
                 In an earlier version of this post, the suggested approach (selecting
                 frequency directions rotated based on the golden ratio) was called
-                uniform RoPE. fluffy on the EleutherAI discord suggested the name
+                uniform RoPE. Fluffy on the EleutherAI discord suggested the name
                 'golden gate RoPE'. <a href="#footnote_1_ref">⏎</a>
             </li>
         </ol>

@@ -311,10 +311,10 @@
         </p>
 
         <p>
-            Rotary positional embeddings (RoPE, <a href="https://arxiv.org/abs/2104.09864">Su et al. 2021</a>) are an
-            elegant solution to this problem. Essentially, the query and key vectors for
-            every token are rotated by an angle proportional to the token's 1d
-            coordinate position.
+            The rotary positional embedding (RoPE, <a href="https://arxiv.org/abs/2104.09864">Su et al. 2021</a>)
+            is an elegant solution to this problem. Essentially, the query and key
+            vectors for every token are rotated by an angle proportional to the token's
+            1d coordinate position.
         </p>
 
         <p class="aside">
@@ -350,9 +350,9 @@
             so RoPE is implementing a single rotation on the vector as a whole.
         </p>
         <p>
-            Typically, a range of log-spaced frequency magnitudes are selected, where
-            the \(i\)th frequency magnitude is \[\omega_i = \omega_\text{min} \cdot
-            (\omega_\text{max} / \omega_\text{min}) ^{\frac{i}{D/2 - 1}}.\]
+            Typically, a range of log-spaced frequencies are selected, where the \(i\)th
+            frequency is \[\omega_i = \omega_\text{min} \cdot (\omega_\text{max} /
+            \omega_\text{min}) ^{\frac{i}{D/2 - 1}}.\]
 
             <!-- Intuitively, including a wide range of frequencies enables querying
             positions with varying specificity. For example, a query vector restricted
@@ -464,9 +464,10 @@
             At initialization, unit directions \(\{\mathbf{u}_i\}_{i=1}^{D/2}\),
             \(\mathbf{u}_i \in \mathbb{R}^2\), \(\|\mathbf{u}_i\|_2 = 1\) are selected for
             each of the \(D/2\) dimension pairs. During inference, the angle of rotation
-            for the \(i\)th pair is given by \(\omega_i\) times the inner product of the
-            token's 2d position with \(\mathbf{u}_i\) (whereas for 1d RoPE, this angle
-            was just \(\omega_i\) times the token's 1d coordinate position).
+            for the \(i\)th pair is given by the frequency magnitude \(\omega_i\) times
+            the inner product of the token's 2d position with \(\mathbf{u}_i\) (whereas
+            for 1d RoPE, this angle was just \(\omega_i\) times the token's 1d
+            coordinate position).
         </p>
 
         <p class="aside">
@@ -503,9 +504,9 @@
             In other words, the \(i\)th dimension pair is rotated by an angle
             proportional to "the position of the token measured according to the
             direction \(\mathbf{u}_i\)". By spacing out \(\{\mathbf{u}_i\}_{i=1}^{D /
-            2}\) uniformly on the unit circle, while using log-spaced frequency
-            magnitudes \(\{\omega_i\}_{i=1}^{D/2}\), it turns out that RoPE can also
-            produce concentrated attention maps in 2d!
+            2}\) uniformly on the unit circle rather than constraining them to
+            axis-aligned directions, it turns out that RoPE can also produce
+            concentrated attention maps in 2d!
         </p>
 
 
@@ -607,11 +608,11 @@
 
         <ul>
             <li>
-                Learned absolute positional embeddings (APE, e.g. <a href="https://arxiv.org/abs/2010.11929">Dosovitskiy
+                Learned absolute positional embedding (APE, e.g. <a href="https://arxiv.org/abs/2010.11929">Dosovitskiy
                     et al. 2020</a>)
             </li>
             <li>
-                Fixed sinusoidal positional embeddings (SinCos)
+                Fixed sinusoidal positional embedding (SinCos)
                 <ul>
                     <li class="note">
                         an absolute positional embedding approach without trainable
@@ -645,7 +646,7 @@
                 </ul>
             </li>
             <li>
-                RoPE with frozen directions spaced according to the golden ratio (golden gate RoPE)
+                RoPE with fixed directions rotated according to the golden ratio (golden gate RoPE)
                 <sup id="footnote_1_ref"><a href="#footnote_1">[1]</a></sup>
             </li>
         </ul>
@@ -781,8 +782,8 @@
                 href="https://arxiv.org/abs/1710.09412">MixUp</a>, though with the same
             architecture and optimizer setup as the CIFAR10 experiments above.
 
-            Due to resource limits, I only compared fixed sinusoidal positional
-            embeddings, axial RoPE, mixed RoPE, and golden gate RoPE.
+            Due to resource limits, I only compared the fixed sinusoidal positional
+            embedding, axial RoPE, mixed RoPE, and golden gate RoPE.
 
             See hyperparameters <a href="#imagenet1k_hyperparams">here</a> and code <a
                 href="https://github.com/jxiong21029/archibox/blob/main/archibox/ropend/imagenet_classification.py">here</a>.
@@ -959,11 +960,12 @@
         </div>
 
         <p>
-            Axial RoPE generalized better than fixed sinuisoidal positional embeddings,
-            and mixed RoPE generalized better than axial. Surprisingly, golden gate RoPE
-            generalized better than mixed RoPE, and both mixed RoPE and golden gate RoPE
-            actually had higher validation accuracy at 384x384 when combined with
-            temperature scaling than they had at the training resolution of 224x224.
+            Axial RoPE generalized better than the fixed sinuisoidal positional
+            embedding, and mixed RoPE generalized better than axial RoPE. Surprisingly,
+            golden gate RoPE generalized better than mixed RoPE, and both mixed RoPE and
+            golden gate RoPE actually had higher validation accuracy at 384x384 when
+            combined with temperature scaling than they had at the training resolution
+            of 224x224.
         </p>
 
         <p>

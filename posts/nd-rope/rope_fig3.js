@@ -64,6 +64,18 @@ function computeAlignment(nComponents) {
         x_bf[idx] = randn();
         y_bf[idx] = randn();
     }
+    for (let r = 0; r < B; r++) {
+        let tot = 0;
+        for (let c = 0; c < nFreqs; c++) {
+            tot += Math.pow(x_bf[r * nFreqs + c], 2);
+            tot += Math.pow(y_bf[r * nFreqs + c], 2);
+        }
+        let div = Math.sqrt(tot / nFreqs / 2);
+        for (let c = 0; c < nFreqs; c++) {
+            x_bf[r * nFreqs + c] = x_bf[r * nFreqs + c] / div;
+            y_bf[r * nFreqs + c] = y_bf[r * nFreqs + c] / div;
+        }
+    }
 
     const freqs = new Float64Array(nFreqs * 2);
     for (let f = 0; f < nComponents; f++) {

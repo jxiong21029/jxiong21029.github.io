@@ -67,7 +67,8 @@ function computeAlignment(minFreq, maxFreq, nFreqs) {
         const y = ws.flatMap(w => [Math.cos(w * theta), Math.sin(w * theta)]);
         const dot = d3.sum(d3.range(2 * nFreqs).map(i => x[i] * y[i]));
         const normY = Math.sqrt(d3.sum(y.map(v => v * v)));
-        const alignment = Math.max(-0.26, dot / (Math.sqrt(nFreqs) * normY));
+        // clamp to fit in plot yrange
+        const alignment = Math.max(-0.25, dot / (Math.sqrt(nFreqs) * normY));
         return { theta, alignment };
     });
 }

@@ -312,9 +312,8 @@
 
         <p>
             The rotary positional embedding (RoPE, <a href="https://arxiv.org/abs/2104.09864">Su et al. 2021</a>)
-            is an elegant solution to this problem. Essentially, the query and key
-            vectors for every token are rotated by an angle proportional to the token's
-            1d coordinate position.
+            solves this problem by rotating the query and key vectors for every token by
+            an angle proportional to the token's 1d coordinate position.
         </p>
 
         <p class="aside">
@@ -343,43 +342,51 @@
             \]
         </div>
         <p class="aside">
-            The composition of independent rotations on orthogonal 2d planes is itself
-            just a higher-dimensional rotation (see this <a
+            Note that the composition of independent rotations on orthogonal 2d planes
+            is just a higher-dimensional rotation (see this <a
                 href="https://planetmath.org/decompositionoforthogonaloperatorsasrotationsandreflections">article</a>
-            or this <a href="https://www.appletonaudio.com/blog/2023/high-dimension-rotation-matrices/">post</a>),
-            so RoPE is implementing a single rotation on the vector as a whole.
+            or this <a href="https://www.appletonaudio.com/blog/2023/high-dimension-rotation-matrices/">post</a>).
+            <!-- so RoPE implements a single rotation on the vector as a whole. -->
         </p>
         <p>
             Typically, a range of log-spaced frequencies are selected, where the \(i\)th
             frequency is \[\omega_i = \omega_\text{min} \cdot (\omega_\text{max} /
             \omega_\text{min}) ^{\frac{i}{D/2 - 1}}.\]
 
-            <!-- Intuitively, including a wide range of frequencies enables querying
-            positions with varying specificity. For example, a query vector restricted
-            to the dimensions with lower frequencies is effectively like using a RoPE
-            with a slower rate of rotation, increasing the range of positions targeted
-            by the query. -->
+            <!-- For example, a query vector restricted to the dimensions with lower
+            frequencies is effectively like using a RoPE with a slower rate of rotation,
+            increasing the range of positions targeted by the query. -->
         </p>
 
         <!-- <p>
-            RoPE is applied to both the queries and the keys, making it encode only
-            relative positional information (as rotating two vectors by the same angle
-            doesn't affect their inner product). Attending to a specific (key, relative
+            Without RoPE, any particular query attends to all keys in the same direction
+            regardless of position; in contrast, RoPE enables attending to a key only
+            at a range of relative positions (which may or may not be close to the
+            query's position).
+        </p> -->
+
+        <!-- <p>
+            Rotating both the queries and the keys makes RoPE encode only relative
+            positional information, as rotating two vectors by the same angle doesn't
+            affect their dot product.
+            Attending to a specific (key, relative
             position) pair is possible by setting the query to a large vector in the
             direction of that key, rotated by the angle corresponding to that relative
             position.
         </p> -->
 
         <p>
-            Intuitively, larger values of \(\omega_\text{min}\) and
-            \(\omega_\text{max}\) enforce the prior that queries should be more specific
+            Larger frequencies enforce the prior that queries should be more specific
             about position, which can improve expressivity but hurt generalizability.
-            Similarly, smaller values of \(\omega_\text{min}\) and \(\omega_\text{max}\)
-            lead to more invariance w.r.t position, improving generalizability but
-            hurting expressivity.
-            <!-- Increasing the distance between \(\omega_\text{min}\)
-            and \(\omega_\text{max}\) enables a wide range of specificities but reduces
-            the number of query/key dimensions available for the model to use for any
+            Similarly, smaller frequencies lead to more invariance w.r.t position,
+            improving generalizability but hurting expressivity.
+            Including a wide range of frequencies (\(\omega_\text{min} \ll
+            \omega_\text{max}\)) enables a wide range of specificities, but reduces the
+            number of query/key dimensions available for use at any particular level of
+            specificity.
+            <!-- Increasing the distance between \(\omega_\text{min}\) and
+            \(\omega_\text{max}\) enables a wide range of specificities but reduces the
+            number of query/key dimensions available for the model to use for any
             particular level of specificity. -->
         </p>
 
@@ -419,6 +426,7 @@
                 <br><br>As more frequencies are added, their periodic oscillations
                 cancel each other out, resulting in an attention map concentrated at a
                 specific 1d coordinate position.
+                <sup id="footnote_1_ref"><a href="#footnote_1">[1]</a></sup>
             </figcaption>
         </figure>
 
@@ -433,14 +441,14 @@
 
         <p>
             Similar to 1d RoPE, 2d axial RoPE also encodes purely relative positional
-            information. However, 2d axial RoPE does not enable attending solely to
-            specific (key, relative position) pairs. The first half of a query, which
-            rotates according to x-position, contributes the same amount to the
-            attention score for a key regardless of the key's y-position. Similarly,
-            the second half of a query contributes the same amount regardless of
-            x-position. Attending to a token necessarily means attending to any tokens
-            with similar keys located in the same row or column, with a cosine
-            alignment at least half as large, roughly speaking.
+            information. However, 2d axial RoPE does not enable attending to specific
+            (key, relative position) pairs. The first half of a query, which rotates
+            according to x-position, contributes the same amount to the attention score
+            for a key regardless of the key's y-position. Similarly, the second half of
+            a query contributes the same amount regardless of x-position. Attending to a
+            token necessarily means attending to any tokens with similar keys located in
+            the same row or column, with a cosine alignment at least half as large,
+            roughly speaking.
         </p>
 
         <p>
@@ -452,10 +460,11 @@
         <p class="aside">
             Last year, Heo et al. in their <a href="https://arxiv.org/abs/2403.13298">paper</a> titled "Rotary position
             embedding for vision transformer" described this idea as part of their
-            proposed 'Mixed RoPE' method. However, it seems like many of the various
-            recent works which cite Heo et al., such as <a href="https://arxiv.org/abs/2408.00714">SAM 2</a>, <a
-                href="https://arxiv.org/abs/2412.04431">Infinity</a>, and <a
-                href="https://huggingface.co/Qwen/Qwen-Image">Qwen-Image</a>,
+            proposed 'mixed RoPE' method. However, it seems like many of the various
+            recent works which cite Heo et al., such as
+            <a href="https://arxiv.org/abs/2408.00714">SAM 2</a>
+            <!-- <a href="https://arxiv.org/abs/2412.04431">Infinity</a>, -->
+            and <a href="https://huggingface.co/Qwen/Qwen-Image">Qwen-Image</a>,
             are actually still using axial RoPE, based on their official
             implementations. Maybe this is because it isn't obvious from only reading
             the abstract of Heo et al. that the paper introduces a novel approach
@@ -532,15 +541,6 @@
             </div>
         </figure>
 
-        <p>
-            NOTE: since the sequence lengths relevant for language modeling are
-            typically much longer than the side length of image inputs for vision
-            transformers, the minimum and maximum frequency magnitudes should be
-            adjusted to compensate. I recommend using a coordinate system with positions
-            normalized to [-1.0, 1.0] and using \(\omega_\text{min}\) between 0.2 and
-            1.0 and \(\omega_\text{max}\) between 20 and 100.
-        </p>
-
         <h2>Selecting frequency directions</h2>
         <p>
             Mixed RoPE (<a href="https://arxiv.org/abs/2403.13298">Heo et al. 2024</a>)
@@ -602,6 +602,16 @@
             </span>
         </p>
 
+        <p>
+            NOTE: since the sequence lengths relevant for language modeling are
+            typically much longer than the side length of image inputs for vision
+            transformers, the minimum and maximum frequency magnitudes should be
+            adjusted to compensate. I recommend using a coordinate system with positions
+            normalized to [-1.0, 1.0] and using \(\omega_\text{min}\) between 0.2 and
+            1.0 and \(\omega_\text{max}\) between 20 and 100.
+        </p>
+
+
         <h2>ViT experiments</h2>
 
         <p>
@@ -649,7 +659,7 @@
             </li>
             <li>
                 RoPE with fixed directions rotated according to the golden ratio (golden gate RoPE)
-                <sup id="footnote_1_ref"><a href="#footnote_1">[1]</a></sup>
+                <sup id="footnote_2_ref"><a href="#footnote_2">[2]</a></sup>
             </li>
         </ul>
 
@@ -1195,6 +1205,9 @@ class GoldenGateRoPENd(nn.Module):
             <div class="codecaption">
                 This implementation takes the token positions as an additional input to
                 forward().
+
+                <br><br> I recommend decreasing the ratio <code>max_freq</code> / <code>
+                min_freq</code> as the number of positional dimensions increases.
             </div>
         </figure>
 
@@ -1365,10 +1378,34 @@ class GoldenGateRoPENd(nn.Module):
 
         <ol style="color: gray">
             <li id="footnote_1">
+                Note that Fig. 2 is only centered about 0 because it shows cosine
+                similarities between a query and rotations of <em>itself</em>, i.e.
+                \(\langle q\), \(\text{RoPE1d}(q, t)\rangle\) over varying \(t\).
+                Creating a plot centered at some arbitrary position \(\tilde{t}\) is as
+                simple as plotting \(\langle q, \text{RoPE1d}(\tilde{q}, t)\rangle\)
+                instead, where \(\tilde{q} = \text{RoPE1d}(q, -\tilde{t})\).
+                If the plot showed cosine similarities between a query and rotations of
+                some arbitary \(k \in \mathbb R^D\) instead, i.e. \(\langle q,
+                \text{RoPE1d}(k, t)\rangle\) over varying \(t\), then \(k\) could be
+                selected to create a plot centered at any arbitrary position, or even
+                with an arbitrary number of modes. For example, by selecting \(k\) to be
+                the average of multiple different rotations of \(q\) at unique
+                positions, the resulting cosine similarities curve would be the linear
+                combination of the corresponding curves for each position. This is all
+                to say that RoPE doesn't intrinsically bias attention towards
+                short-horizon temporal interactions, but rather, the figures in this
+                post describe how 'the contribution of a component of a query pointing
+                in the direction corresponding to some (key, relative position) pair'
+                decays as the relative position is shifted away from that value; in
+                other words, how selective the average query is w.r.t position.
+                <a href="#footnote_1_ref">⏎</a>
+            </li>
+            <li id="footnote_2">
                 In an earlier version of this post, the suggested approach (selecting
                 frequency directions rotated based on the golden ratio) was called
                 uniform RoPE. Fluffy on the EleutherAI discord suggested the name
-                'golden gate RoPE'. <a href="#footnote_1_ref">⏎</a>
+                'golden gate RoPE'.
+                <a href="#footnote_2_ref">⏎</a>
             </li>
         </ol>
     </div>

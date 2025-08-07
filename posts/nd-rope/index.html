@@ -79,6 +79,7 @@
         .fig-wrapper {
             flex: 1 1 400px;
             max-width: 400px;
+            overflow-x: auto;
         }
 
         .fig-wrapper-smol {
@@ -392,7 +393,9 @@
 
         <figure>
             <div class="fig-wrapper">
-                <svg id="rope1d" width=400 height=300></svg>
+                <div style="width: 400px">
+                    <svg id="rope1d" width=400 height=300></svg>
+                </div>
             </div>
             <div class="figcontrols">
                 <label>

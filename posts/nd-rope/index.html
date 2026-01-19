@@ -1064,7 +1064,7 @@
         <h3>GGRoPE, 2d (PyTorch)</h3>
 
         <figure>
-            <pre class="code"><code class="language-python">class GoldenGateRoPE2d(nn.Module):
+            <pre class="code"><code class="language-python">class GGRoPE2d(nn.Module):
     def __init__(
         self,
         image_size: tuple[int, int],
@@ -1162,7 +1162,7 @@ def make_directions(n: int, d: int) -> torch.Tensor:
     return directions.float()
 
 
-class GoldenGateRoPENd(nn.Module):
+class GGRoPENd(nn.Module):
     def __init__(
         self,
         pos_dim: int,

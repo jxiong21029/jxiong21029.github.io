@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Patch size calculator</title>
+    <style>
+        :root {
+            color-scheme: light;
+            /* font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; */
+            font-family: Arial, Helvetica, sans-serif;
+            color: #202020;
+            background-color: #EEEEEE;
+            font-size: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            margin: auto;
+            max-width: 70em;
+            background-color: white;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 19px;
+            font-weight: 600;
+            margin: 0 0 22px;
+            letter-spacing: -.3px;
+        }
+
+        form {
+            margin: 0 0 20px;
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+            font-size: 12px;
+            color: #505050;
+        }
+
+        input,
+        select {
+            font: inherit;
+            color: #202020;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            min-width: 0;
+            height: 36px;
+            border: 1px solid #cfcfcf;
+            border-radius: 4px;
+            padding: 6px 9px;
+            background: #fff;
+            font-size: 14px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        input:hover,
+        select:hover {
+            border-color: #949494;
+        }
+
+        input:focus-visible,
+        select:focus-visible,
+        summary:focus-visible,
+        .table-wrap:focus-visible {
+            outline: 2px solid #454545;
+            outline-offset: 3px;
+        }
+
+        .primary-fields {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        details {
+            margin-top: 16px;
+        }
+
+        summary {
+            width: fit-content;
+            color: #505050;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 3px 0;
+        }
+
+        fieldset {
+            border: 0;
+            padding: 0;
+            margin: 18px 0 0;
+            min-width: 0;
+        }
+
+        legend {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0;
+            margin-bottom: 10px;
+        }
+
+        .constraint-fields {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .weight-fields {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            width: fit-content;
+            margin-top: 14px;
+        }
+
+        input[type="checkbox"] {
+            margin: 0;
+            accent-color: #333;
+            width: 14px;
+            height: 14px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        th {
+            font-size: 12px;
+            font-weight: 500;
+            color: #505050;
+            background: #f7f7f7;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 14px;
+        }
+
+        th small {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            margin-top: 3px;
+            color: #717171;
+        }
+
+        td {
+            border-bottom: 1px solid #e9e9e9;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th:first-child,
+        td:first-child {
+            padding-left: 12px;
+            width: 44px;
+            color: #777;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 12px;
+        }
+
+        .number {
+            text-align: right;
+        }
+
+        tbody .message {
+            padding: 26px 12px;
+            font-family: inherit;
+            color: #666;
+            text-align: center;
+        }
+
+        #results[aria-busy="true"] tbody {
+            opacity: .4;
+        }
+
+        #error {
+            font-size: 13px;
+            margin: 0 0 14px;
+            color: #a12828;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 700px) {
+            main {
+                padding: 20px 16px 32px;
+            }
+
+            .primary-fields,
+            .constraint-fields,
+            .weight-fields {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            h1 {
+                margin-bottom: 18px;
+            }
+
+            th,
+            td {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Patch size calculator</h1>
+        <noscript>JavaScript is required.</noscript>
+        <form id="settings-form" novalidate autocomplete="off">
+            <div class="primary-fields">
+                <label>Height (px)<input id="height" name="height" type="number" value="720" min="1" max="65536"
+                        step="1" inputmode="numeric" required></label>
+                <label>Width (px)<input id="width" name="width" type="number" value="1280" min="1" max="65536" step="1"
+                        inputmode="numeric" required></label>
+                <label>Target tokens<input id="tokens" name="tokens" type="number" value="960" min="1" max="262144"
+                        step="1" inputmode="numeric" required></label>
+                <label>Patch sides divisible by<input id="patchMultiple" name="patchMultiple" type="number" value="2"
+                        min="1" max="4096" step="1" inputmode="numeric" required></label>
+            </div>
+            <details id="options">
+                <summary>Advanced</summary>
+                <fieldset>
+                    <legend>Constraints</legend>
+                    <div class="constraint-fields">
+                        <label>Min patch side (px)<input id="minPatch" type="number" value="1" min="1" max="4096"
+                                step="1" inputmode="numeric" required></label>
+                        <label>Max patch side (px)<input id="maxPatch" type="number" value="512" min="1" max="4096"
+                                step="1" inputmode="numeric" required></label>
+                        <label>Token tolerance (±)<input id="tolerance" type="number" value="0" min="0" max="512"
+                                step="1" inputmode="numeric" required></label>
+                        <label>Max resize / edge<select id="resizeLimit">
+                                <option value="0">Unlimited</option>
+                                <option value="1">1× (no resizing)</option>
+                                <option value="1.25">1.25× (80–125%)</option>
+                                <option value="1.5">1.5× (66.7–150%)</option>
+                                <option value="2">2× (50–200%)</option>
+                                <option value="4">4× (25–400%)</option>
+                                <option value="8">8× (12.5–800%)</option>
+                            </select></label>
+                        <label>Candidates<input id="count" type="number" value="20" min="1" max="100" step="1"
+                                inputmode="numeric" required></label>
+                    </div>
+                    <label class="checkbox-label"><input id="distinct" type="checkbox">One per token grid</label>
+                </fieldset>
+                <fieldset>
+                    <legend>Penalty weights</legend>
+                    <div class="weight-fields">
+                        <label>Resizing<input id="resizeWeight" type="number" value="8" min="1" max="100" step="any"
+                                inputmode="decimal" required></label>
+                        <label>Aspect distortion<input id="aspectWeight" type="number" value="4" min="0" max="100"
+                                step="any" inputmode="decimal" required></label>
+                        <label>Rectangular patches<input id="squareWeight" type="number" value="1" min="0" max="100"
+                                step="any" inputmode="decimal" required></label>
+                        <label>Token deviation<input id="tokenWeight" type="number" value="32" min="0" max="100"
+                                step="any" inputmode="decimal" required></label>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Columns</legend>
+                    <label class="checkbox-label"><input id="showTokens" type="checkbox" aria-controls="results">Show
+                        tokens</label>
+                    <label class="checkbox-label"><input id="showScore" type="checkbox" aria-controls="results">Show
+                        score</label>
+                </fieldset>
+            </details>
+        </form>
+        <section id="results" aria-label="Candidates" aria-busy="true">
+            <p id="error" role="alert" hidden></p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Candidate shortlist">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Patch size<small>H × W (px)</small></th>
+                            <th scope="col">Token grid<small>h × w</small></th>
+                            <th scope="col">Resized<small>H × W (px)</small></th>
+                            <th scope="col">Resize<small>ΔH/H, ΔW/W</small></th>
+                            <th scope="col" class="number" data-column="tokens" hidden>Tokens</th>
+                            <th scope="col" class="number" data-column="score" aria-sort="descending" hidden>Score ↓
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidate-rows">
+                        <tr>
+                            <td colspan="5" class="message">Calculating…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+    </main>
+    <script id="patch-engine">
+        (function (root) {
+            'use strict';
+            const EPS = 1e-11;
+            const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+            const defaults = Object.freeze({
+                height: 720, width: 1280, tokens: 960, tolerance: 0,
+                minPatch: 1, maxPatch: 512, patchMultiple: 8, resizeLimit: 0,
+                resizeWeight: 4, aspectWeight: 2, squareWeight: 1, tokenWeight: 32,
+                count: 20, distinct: false
+            });
+
+            function validate(options) {
+                const s = { ...defaults, ...options };
+                // Ignore obsolete or unknown settings when migrating an older saved setup.
+                for (const key of Object.keys(s)) {
+                    if (!Object.prototype.hasOwnProperty.call(defaults, key)) delete s[key];
+                }
+                const integer = (key, lo, hi, label) => {
+                    if (!Number.isSafeInteger(s[key]) || s[key] < lo || s[key] > hi)
+                        throw new Error(`${label} must be a whole number from ${lo.toLocaleString('en-US')} to ${hi.toLocaleString('en-US')}.`);
+                };
+                integer('height', 1, 65536, 'Source height');
+                integer('width', 1, 65536, 'Source width');
+                integer('tokens', 1, 262144, 'Target token count');
+                integer('tolerance', 0, 512, 'Token tolerance');
+                integer('minPatch', 1, 4096, 'Minimum patch side');
+                integer('maxPatch', 1, 4096, 'Maximum patch side');
+                integer('patchMultiple', 1, 4096, 'Patch-side divisor');
+                integer('count', 1, 100, 'Number of suggestions');
+                if (s.minPatch > s.maxPatch) throw new Error('Minimum patch side cannot exceed maximum patch side.');
+                for (const key of ['resizeWeight', 'aspectWeight', 'squareWeight', 'tokenWeight']) {
+                    const min = key === 'resizeWeight' ? 1 : 0;
+                    if (!Number.isFinite(s[key]) || s[key] < min || s[key] > 100)
+                        throw new Error(`${key} must be between ${min} and 100.`);
+                }
+                if (!Number.isFinite(s.resizeLimit) || (s.resizeLimit !== 0 && (s.resizeLimit < 1 || s.resizeLimit > 16)))
+                    throw new Error('Resize limit must be 0 (unlimited), or a factor from 1 to 16.');
+                s.distinct = Boolean(s.distinct);
+                return s;
+            }
+
+            // Ascending desirability loss, with deterministic tie-breakers. Raw loss is
+            // used for ordering even when displayed scores round to the same number.
+            function compare(a, b) {
+                return a.loss - b.loss || a.tokenDelta - b.tokenDelta ||
+                    a.resizePenalty - b.resizePenalty || a.squarePenalty - b.squarePenalty ||
+                    a.gridH - b.gridH || a.gridW - b.gridW || a.patchH - b.patchH || a.patchW - b.patchW;
+            }
+
+            class TopK {
+                constructor(k) { this.k = k; this.items = []; }
+                cutoff() { return this.items.length < this.k ? Infinity : this.items[0].loss; }
+                add(value) {
+                    const a = this.items;
+                    if (a.length < this.k) {
+                        a.push(value);
+                        let i = a.length - 1;
+                        while (i > 0) {
+                            const p = (i - 1) >> 1;
+                            if (compare(a[i], a[p]) <= 0) break;
+                            [a[i], a[p]] = [a[p], a[i]]; i = p;
+                        }
+                    } else if (compare(value, a[0]) < 0) {
+                        a[0] = value;
+                        let i = 0;
+                        for (; ;) {
+                            let worst = i, l = i * 2 + 1, r = l + 1;
+                            if (l < a.length && compare(a[l], a[worst]) > 0) worst = l;
+                            if (r < a.length && compare(a[r], a[worst]) > 0) worst = r;
+                            if (worst === i) break;
+                            [a[i], a[worst]] = [a[worst], a[i]]; i = worst;
+                        }
+                    }
+                }
+                sorted() { return this.items.slice().sort(compare); }
+            }
+
+            function penalties(s, gh, gw, ph, pw) {
+                const a = Math.log(gh * ph / s.height), b = Math.log(gw * pw / s.width);
+                const q = Math.log(ph / pw), t = Math.log(gh * gw / s.tokens);
+                const resizePenalty = s.resizeWeight * (a * a + b * b) / 2;
+                const aspectPenalty = s.aspectWeight * (a - b) ** 2;
+                const squarePenalty = s.squareWeight * q * q;
+                const tokenPenalty = s.tokenWeight * t * t;
+                const loss = resizePenalty + aspectPenalty + squarePenalty + tokenPenalty;
+                return { loss, resizePenalty, aspectPenalty, squarePenalty, tokenPenalty };
+            }
+
+            function candidate(s, g, ph, pw) {
+                const p = penalties(s, g.gh, g.gw, ph, pw);
+                return {
+                    gridH: g.gh, gridW: g.gw, patchH: ph, patchW: pw,
+                    resizedH: g.gh * ph, resizedW: g.gw * pw, tokens: g.gh * g.gw,
+                    scaleH: g.gh * ph / s.height, scaleW: g.gw * pw / s.width,
+                    tokenDelta: Math.abs(g.gh * g.gw - s.tokens), ...p,
+                    score: 100 * Math.exp(-p.loss)
+                };
+            }
+
+            function prepareGrid(s, gh, gw, logs) {
+                let loH = s.minPatch, hiH = s.maxPatch, loW = s.minPatch, hiW = s.maxPatch;
+                if (s.resizeLimit) {
+                    loH = Math.max(loH, Math.ceil(s.height / (s.resizeLimit * gh)));
+                    hiH = Math.min(hiH, Math.floor(s.height * s.resizeLimit / gh));
+                    loW = Math.max(loW, Math.ceil(s.width / (s.resizeLimit * gw)));
+                    hiW = Math.min(hiW, Math.floor(s.width * s.resizeLimit / gw));
+                }
+                // Align both axes to multiples of the same divisor before searching.
+                // Infeasible bounds return no grid; the filter is never relaxed.
+                const step = s.patchMultiple;
+                loH = Math.ceil(loH / step) * step;
+                hiH = Math.floor(hiH / step) * step;
+                loW = Math.ceil(loW / step) * step;
+                hiW = Math.floor(hiW / step) * step;
+                if (loH > hiH || loW > hiW) return null;
+                const a = Math.log(gh / s.height), b = Math.log(gw / s.width);
+                const R = s.resizeWeight, D = s.aspectWeight, S = s.squareWeight;
+                const A = R / 2 + D + S, C = D + S;
+                const d1 = -R * a / 2 - D * (a - b);
+                const d2 = -R * b / 2 + D * (a - b);
+                const tokenLoss = s.tokenWeight * Math.log(gh * gw / s.tokens) ** 2;
+                const ul = logs[loH], uh = logs[hiH], vl = logs[loW], vh = logs[hiW];
+                const lossAt = (u, v) => {
+                    const x = u + a, y = v + b;
+                    return R * (x * x + y * y) / 2 + D * (x - y) ** 2 + S * (u - v) ** 2 + tokenLoss;
+                };
+                const vAt = u => clamp((C * u + d2) / A, vl, vh);
+                const uAt = v => clamp((C * v + d1) / A, ul, uh);
+                const det = (A - C) * (A + C);
+                const u0 = (A * d1 + C * d2) / det;
+                const v0 = (C * d1 + A * d2) / det;
+                const points = [[ul, vAt(ul)], [uh, vAt(uh)], [uAt(vl), vl], [uAt(vh), vh]];
+                if (u0 >= ul && u0 <= uh && v0 >= vl && v0 <= vh) points.push([u0, v0]);
+                let best = { lowerBound: Infinity, optU: ul };
+                for (const [u, v] of points) {
+                    const loss = lossAt(u, v);
+                    if (loss < best.lowerBound) best = { lowerBound: loss, optU: u };
+                }
+                return { gh, gw, loH, hiH, loW, hiW, step, A, C, d2, vl, vh, lossAt, vAt, ...best };
+            }
+
+            /**
+             * Exact top-K search over integer patch sizes within the configured bounds.
+             * Each fixed token grid has a strictly convex quadratic loss in log(patch H)
+             * and log(patch W). Its continuous minimum is a lower bound. We visit only
+             * multiples of patchMultiple, outward from the continuous minima on each axis.
+             * Aligning bounds and stepping by the divisor preserves the exact top-K
+             * search; this is not post-filtering an already-truncated shortlist.
+             */
+            function search(options) {
+                const s = validate(options);
+                const logs = new Float64Array(s.maxPatch + 1);
+                for (let i = 1; i <= s.maxPatch; i++) logs[i] = Math.log(i);
+                const grids = [];
+                let totalGrids = 0;
+                const startTokens = Math.max(1, s.tokens - s.tolerance), endTokens = s.tokens + s.tolerance;
+                for (let t = startTokens; t <= endTokens; t++) {
+                    for (let h = 1; h * h <= t; h++) {
+                        if (t % h) continue;
+                        const w = t / h;
+                        for (const [gh, gw] of h === w ? [[h, w]] : [[h, w], [w, h]]) {
+                            totalGrids++;
+                            const grid = prepareGrid(s, gh, gw, logs);
+                            if (grid) grids.push(grid);
+                        }
+                    }
+                }
+                grids.sort((a, b) => a.lowerBound - b.lowerBound || a.gh - b.gh || a.gw - b.gw);
+                const global = new TopK(s.count);
+                let exploredGrids = 0, rowsVisited = 0, patchesEvaluated = 0;
+                for (const g of grids) {
+                    if (g.lowerBound > global.cutoff() + EPS) break;
+                    exploredGrids++;
+                    const local = s.distinct ? new TopK(1) : global;
+                    const cutoff = () => Math.min(local.cutoff(), global.cutoff());
+                    const step = g.step;
+                    const floorSide = (value, lo, hi) => clamp(Math.floor(value / step) * step, lo - step, hi);
+                    let left = floorSide(Math.exp(g.optU), g.loH, g.hiH), right = left + step;
+                    const row = ph => {
+                        if (ph < g.loH || ph > g.hiH) return { loss: Infinity };
+                        const u = logs[ph], v = g.vAt(u);
+                        return { ph, u, v, loss: g.lossAt(u, v) };
+                    };
+                    let lr = row(left), rr = row(right);
+                    while (left >= g.loH || right <= g.hiH) {
+                        const takeLeft = lr.loss <= rr.loss;
+                        const r = takeLeft ? lr : rr;
+                        if (!Number.isFinite(r.loss) || r.loss > cutoff() + EPS) break;
+                        rowsVisited++;
+                        let wl = floorSide(Math.exp(r.v), g.loW, g.hiW), wr = wl + step;
+                        const col = pw => {
+                            if (pw < g.loW || pw > g.hiW) return null;
+                            patchesEvaluated++;
+                            return candidate(s, g, r.ph, pw);
+                        };
+                        let lc = col(wl), rc = col(wr);
+                        while (lc || rc) {
+                            const useLeft = lc && (!rc || compare(lc, rc) <= 0);
+                            const c = useLeft ? lc : rc;
+                            if (c.loss > cutoff() + EPS) break;
+                            local.add(c);
+                            if (useLeft) { wl -= step; lc = col(wl); }
+                            else { wr += step; rc = col(wr); }
+                        }
+                        if (takeLeft) { left -= step; lr = row(left); }
+                        else { right += step; rr = row(right); }
+                    }
+                    if (s.distinct && local.items.length) global.add(local.items[0]);
+                }
+                return {
+                    settings: s, candidates: global.sorted(),
+                    stats: { totalGrids, feasibleGrids: grids.length, exploredGrids, rowsVisited, patchesEvaluated, startTokens, endTokens }
+                };
+            }
+            const api = { defaults, validate, search, compare, penalties };
+            if (typeof module !== 'undefined' && module.exports) module.exports = api;
+            root.PatchEngine = api;
+        })(typeof self !== 'undefined' ? self : globalThis);
+
+    </script>
+    <script>
+        (function () {
+            'use strict';
+            const $ = id => document.getElementById(id);
+            const fmt = n => new Intl.NumberFormat('en-US').format(n);
+            const shape = (h, w) => `${fmt(h)} × ${fmt(w)}`;
+            const numericKeys = ['height', 'width', 'tokens', 'patchMultiple', 'minPatch', 'maxPatch',
+                'tolerance', 'resizeLimit', 'count', 'resizeWeight', 'aspectWeight', 'squareWeight', 'tokenWeight'];
+            const storageKey = 'patch-lab-settings-v2';
+            let worker = null, workerURL = null, timer = null, requestId = 0, lastSettings = null;
+
+            function percent(scale) {
+                if (scale === 1) return '0%';
+                const n = (scale - 1) * 100;
+                const sign = n > 0 ? '+' : '−';
+                return Math.abs(n) < .05 ? `${sign}<0.1%` : `${sign}${fmt(Number(Math.abs(n).toFixed(1)))}%`;
+            }
+
+            function readForm() {
+                const s = {};
+                for (const key of numericKeys) s[key] = $(key).value.trim() === '' ? NaN : Number($(key).value);
+                s.distinct = $('distinct').checked;
+                return PatchEngine.validate(s);
+            }
+
+            function setForm(s) {
+                for (const key of numericKeys) $(key).value = s[key];
+                $('distinct').checked = s.distinct;
+            }
+
+            function visibleColumnCount() {
+                return 5 + Number($('showTokens').checked) + Number($('showScore').checked);
+            }
+
+            function updateColumnVisibility() {
+                for (const [column, control] of [['tokens', 'showTokens'], ['score', 'showScore']]) {
+                    $('results').querySelectorAll(`[data-column="${column}"]`).forEach(cell => {
+                        cell.hidden = !$(control).checked;
+                    });
+                }
+                $('candidate-rows').querySelectorAll('.message').forEach(cell => {
+                    cell.colSpan = visibleColumnCount();
+                });
+            }
+
+            function message(text) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = visibleColumnCount();
+                cell.className = 'message';
+                cell.textContent = text;
+                row.appendChild(cell);
+                $('candidate-rows').replaceChildren(row);
+            }
+
+            function fail(text) {
+                lastSettings = null;
+                $('results').setAttribute('aria-busy', 'false');
+                $('error').textContent = text;
+                $('error').hidden = false;
+                $('candidate-rows').replaceChildren();
+                $('status').textContent = '';
+            }
+
+            function finish(result) {
+                $('results').setAttribute('aria-busy', 'false');
+                $('error').hidden = true;
+                const fragment = document.createDocumentFragment();
+                result.candidates.forEach((c, index) => {
+                    const row = document.createElement('tr');
+                    const values = [index + 1, shape(c.patchH, c.patchW), shape(c.gridH, c.gridW),
+                    shape(c.resizedH, c.resizedW), `${percent(c.scaleH)}, ${percent(c.scaleW)}`,
+                    fmt(c.tokens), c.score.toFixed(2)];
+                    values.forEach((value, column) => {
+                        const cell = document.createElement('td');
+                        cell.textContent = value;
+                        if (column >= 5) {
+                            cell.className = 'number';
+                            cell.dataset.column = column === 5 ? 'tokens' : 'score';
+                            cell.hidden = true;
+                        }
+                        row.appendChild(cell);
+                    });
+                    fragment.appendChild(row);
+                });
+                $('candidate-rows').replaceChildren(fragment);
+                if (!result.candidates.length) message('No candidates match these constraints.');
+                updateColumnVisibility();
+                $('status').textContent = `${result.candidates.length} candidates.`;
+                try { localStorage.setItem(storageKey, JSON.stringify(result.settings)); }
+                catch (_) { /* Local-file storage can be unavailable. */ }
+            }
+
+            function runInPage(id, settings) {
+                setTimeout(() => {
+                    if (id !== requestId) return;
+                    try {
+                        const result = PatchEngine.search(settings);
+                        if (id === requestId) finish(result);
+                    } catch (e) { if (id === requestId) fail(e.message); }
+                }, 0);
+            }
+
+            function stopWorker() {
+                if (worker) worker.terminate();
+                worker = null;
+                if (workerURL) URL.revokeObjectURL(workerURL);
+                workerURL = null;
+            }
+
+            function makeWorker() {
+                try {
+                    if (!window.Worker) return;
+                    const src = $('patch-engine').textContent + `
+        self.onmessage = ({ data: { id, settings } }) => {
+          try { self.postMessage({ id, result: PatchEngine.search(settings) }); }
+          catch (e) { self.postMessage({ id, error: e.message }); }
+        };`;
+                    workerURL = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+                    worker = new Worker(workerURL);
+                    worker.onmessage = ({ data }) => {
+                        if (data.id !== requestId) return;
+                        if (data.error) fail(data.error); else finish(data.result);
+                    };
+                    worker.onerror = event => {
+                        event.preventDefault();
+                        stopWorker();
+                        if (lastSettings) runInPage(requestId, lastSettings);
+                    };
+                } catch (_) { stopWorker(); }
+            }
+
+            function run() {
+                clearTimeout(timer);
+                const id = ++requestId;
+                let settings;
+                try { settings = readForm(); }
+                catch (e) { fail(e.message); return; }
+                lastSettings = settings;
+                $('error').hidden = true;
+                $('results').setAttribute('aria-busy', 'true');
+                $('status').textContent = 'Calculating…';
+                if (worker) {
+                    try { worker.postMessage({ id, settings }); }
+                    catch (_) { stopWorker(); runInPage(id, settings); }
+                } else runInPage(id, settings);
+            }
+
+            function schedule() {
+                clearTimeout(timer);
+                // Invalidate older results immediately, including worker fallback work.
+                requestId++;
+                lastSettings = null;
+                $('error').hidden = true;
+                $('results').setAttribute('aria-busy', 'true');
+                $('status').textContent = 'Calculating…';
+                timer = setTimeout(run, 160);
+            }
+
+            function handleFormChange(event) {
+                if (event.target.id === 'showTokens' || event.target.id === 'showScore') {
+                    updateColumnVisibility();
+                } else {
+                    schedule();
+                }
+            }
+
+            $('settings-form').addEventListener('input', handleFormChange);
+            $('settings-form').addEventListener('change', handleFormChange);
+            $('settings-form').addEventListener('submit', event => { event.preventDefault(); run(); });
+            $('settings-form').addEventListener('keydown', event => {
+                if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+                    event.preventDefault(); run();
+                }
+            });
+            window.addEventListener('pagehide', stopWorker);
+
+            let initial = PatchEngine.defaults;
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    const s = PatchEngine.validate(JSON.parse(saved));
+                    const fits = numericKeys.every(key => {
+                        const el = $(key);
+                        return el.tagName === 'SELECT'
+                            ? Array.from(el.options).some(o => Number(o.value) === s[key])
+                            : s[key] >= Number(el.min) && s[key] <= Number(el.max);
+                    });
+                    if (fits) initial = s;
+                }
+            } catch (_) { }
+            setForm(initial);
+            $('showTokens').checked = false;
+            $('showScore').checked = false;
+            updateColumnVisibility();
+            makeWorker();
+            run();
+        })();
+    </script>
+</body>
+
+</html>
